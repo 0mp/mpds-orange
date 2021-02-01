@@ -1,0 +1,27 @@
+logging:
+  level:
+    com:
+      mpds:
+        flinkautoscaler: debug
+    org:
+      springframework:
+        data:
+          r2dbc: debug
+r2dbc:
+  postgres:
+    database: postgres
+    hostname: localhost
+    password: postgres
+    port: 5432
+    username: postgres
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5432/postgres
+    username: postgres
+    password: postgres
+  jpa:
+    show-sql: true
