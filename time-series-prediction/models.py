@@ -6,11 +6,11 @@ import torch.optim as optim
 
 class LSTM_1D_TimeSeries(nn.Module):
     
-    def __init__(self, hidden_dim, seq_len, future = 1):
+    def __init__(self, hidden_dim, ts_len, future = 1):
         
         super().__init__()
         self.hidden_dim = hidden_dim
-        self.lstm_out_dim = seq_len * hidden_dim
+        self.lstm_out_dim = ts_len * hidden_dim
         
         self.lstm = nn.LSTM(1, hidden_dim, batch_first=True)
         self.hidden2out = nn.Linear(self.lstm_out_dim, future)
