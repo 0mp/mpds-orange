@@ -7,7 +7,7 @@ import numpy as np
 
 from matplotlib import pyplot as plt
 
-def train_lambda(model, lambda_func, future = 1, time_range = 24, tick_size = 0.1, max_t = 10000, epochs = 500, batch_size = 256, dev = torch.device("cuda")):   
+def train_lambda(model, lambda_func, future = 1, time_range = 24, tick_size = 0.1, max_t = 1000, epochs = 500, batch_size = 512, dev = torch.device("cuda")):   
     
     optimizer = optim.AdamW(model.parameters())
     criterion = nn.MSELoss()
@@ -29,7 +29,7 @@ def train_lambda(model, lambda_func, future = 1, time_range = 24, tick_size = 0.
             for i in range(future_ticks.shape[0]):
                 future_ticks[i, :] = starts[i] + time_range + np.arange(future) * tick_size
 
-            x = torch.from_numpy(lambda_func(ticks)).to(dev)
+            x = torch.from_numpy(lambda_func(ticks)[:,None,:]).to(dev)
             y = torch.from_numpy(lambda_func(future_ticks)).to(dev)
             
             y_hat = model(x)
@@ -46,7 +46,7 @@ def train_lambda(model, lambda_func, future = 1, time_range = 24, tick_size = 0.
 def eval_lambda(model, lambda_func, time_range = 24, tick_size = 0.1, eval_from = 100, dev = torch.device("cuda")):
     
     ticks = 100 + np.arange(time_range / tick_size) * tick_size
-    x = torch.from_numpy(lambda_func(ticks)[None,:]).to(dev)
+    x = torch.from_numpy(lambda_func(ticks)[None,None,:]).to(dev)
     
     model.eval()
     with torch.no_grad():
