@@ -7,9 +7,9 @@ import numpy as np
 
 from matplotlib import pyplot as plt
 
-def train_lambda(model, lambda_func, future = 1, time_range = 24, tick_size = 0.1, max_t = 1000, epochs = 500, batch_size = 512, dev = torch.device("cuda")):   
+def train_lambda(model, lambda_func, future = 1, time_range = 24, tick_size = 0.1, max_t = 10000, epochs = 500, batch_size = 1028, lr=0.001, dev = torch.device("cuda")):   
     
-    optimizer = optim.AdamW(model.parameters())
+    optimizer = optim.AdamW(model.parameters(), lr=lr)
     criterion = nn.MSELoss()
     model = model.double()
     model.to(dev)
