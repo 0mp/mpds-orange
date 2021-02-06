@@ -74,7 +74,7 @@ helm install upgrade -f override.yaml flink-autoscaler .
 helm uninstall flink-autoscaler
 ```
 
-### Links`
+### Links
 * Using Helm and Kubernetes: https://www.baeldung.com/kubernetes-helm
 * Jib - Containerize your Gradle Java project: https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin#quickstart
 * Dockerizing Java Apps using Jib: https://www.baeldung.com/jib-dockerizing
