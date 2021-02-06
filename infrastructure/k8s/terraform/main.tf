@@ -27,7 +27,7 @@ variable "gke_auto_scaling_enabled" {
 }
 
 variable "gke_min_master_version" {
-  default     = "1.16.15-gke.4901"
+  default     = "1.16.15-gke.7800"
   description = "The minimum version of the master node on GKE"
 }
 
@@ -152,6 +152,7 @@ resource "google_container_node_pool" "primary_nodes" {
 
     depends_on = [
     google_container_cluster.dev-cluster,
+      google_project_service.service,
   ]
 }
 
