@@ -50,16 +50,17 @@ _Skip this section if there is already an existent Kubernetes Cluster_
   gcloud iam service-accounts keys create ./key.json \
   --iam-account terraform@mpds-task-2.iam.gserviceaccount.com
   ```
-* Configure kubectl with Terraform
-  ```
-  gcloud container clusters get-credentials $(terraform output kubernetes_cluster_name) --region $(terraform output region)
-  ```
 * Retrieve the IAM roles if required:
   ```
   gcloud projects get-iam-policy mpds-task-2 \
   --flatten="bindings[].members" \
   --format='table(bindings.role)' \
   --filter="bindings.members:terraform@mpds-task-2.iam.gserviceaccount.com"
+  ```
+  
+* Create the Google Cloud Storage bucket through the GCP console:
+  ```
+  mpds-task-2
   ```
 * Navigate to the folder k8s/terraform and initialize Terraform through the command:
   ```
@@ -72,6 +73,10 @@ _Skip this section if there is already an existent Kubernetes Cluster_
 * Apply the Terraform plan and confirm the action:
   ```
   terraform apply
+  ```
+* Configure kubectl with Terraform
+  ```
+  gcloud container clusters get-credentials $(terraform output kubernetes_cluster_name) --region $(terraform output region)
   ```
 * Repeat the Terraform commands in the same order to apply new changes or in case of failures, i.e.:
   ```
@@ -120,5 +125,7 @@ To access the Kubernetes cluster from a browser, open up the firewall with:
 gcloud compute firewall-rules create nodeports \
 --allow tcp --source-ranges=0.0.0.0/0
 ```
-## Troubleshooting
+## Known Issues
 * Sometimes the Terraform commands don't work immediately. In that case, repeat the Terraform commands (see above)
+* Update the latest GKE stable version if errors are thrown related to that on the Terraform main.tf file
+* Enable the APIs manually through the GCP console if required
