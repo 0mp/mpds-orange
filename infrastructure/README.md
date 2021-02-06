@@ -1,0 +1,119 @@
+# Setting up the infrastructure
+
+The Docker images and Helm charts can be deployed on any Kubernetes Cluster. In this case, the infrastructure was setup
+through the Google Kubernetes Engine (GKE). However, if the Kubernetes Cluster was set up on any other cloud provider or
+on-premise, the Helm charts can be used to do the deployments of the application components.
+
+## Prerequisites
+
+* Install Terraform (see https://learn.hashicorp.com/tutorials/terraform/install-cli?in=terraform/gcp-get-started)
+* Install the gcloud sdk (see https://cloud.google.com/sdk) in case the gcp commands are executed from the local machine
+  instead of using Google Cloud Shell
+
+## Setup GKE cluster
+
+_Skip this section if there is already an existent Kubernetes Cluster_
+
+* Use Google Cloud Shell (see https://cloud.google.com/shell) or the gcloud sdk with a cli to run the commands from your
+  local machine
+* Authenticate through gcloud if no gcp service account is used:
+  ```
+  gcloud auth application-default login
+  ```
+* Create Service Account for Terraform
+  ```
+  gcloud iam service-accounts create terraform \
+   --description="This service account is used for Terraform" \
+   --display-name="Terraform"
+  ```
+* Create IAM policy binding
+  ```
+  gcloud projects add-iam-policy-binding mpds-task-2 \
+   --member="serviceAccount:terraform@mpds-task-2.iam.gserviceaccount.com" \
+   --role="roles/owner"
+  ```
+* Add IAM policy binding service account user to user accounts
+  ```
+  gcloud iam service-accounts add-iam-policy-binding \
+   terraform@mpds-task-2.iam.gserviceaccount.com \
+   --member="user:MY_GCP_EMAIL_ADDRESS" \
+   --role="roles/iam.serviceAccountUser"
+  ```
+  _While Replacing MY_GCP_EMAIL_ADDRESS with the real account_
+* Create service account key for Terraform
+  ```
+  gcloud iam service-accounts keys create ./key.json \
+  --iam-account terraform@mpds-task-2.iam.gserviceaccount.com
+  ```
+* Configure kubectl with Terraform
+  ```
+  gcloud container clusters get-credentials $(terraform output kubernetes_cluster_name) --region $(terraform output region)
+  ```
+* Retrieve the IAM roles if required:
+  ```
+  gcloud projects get-iam-policy mpds-task-2 \
+  --flatten="bindings[].members" \
+  --format='table(bindings.role)' \
+  --filter="bindings.members:terraform@mpds-task-2.iam.gserviceaccount.com"
+  ```
+* Navigate to the folder k8s/terraform and initialize Terraform through the command:
+  ```
+  terraform init
+  ```
+* Validate the Terraform plan:
+  ```
+  terraform plan
+  ```
+* Apply the Terraform plan and confirm the action:
+  ```
+  terraform apply
+  ```
+* Repeat the Terraform commands in the same order to apply new changes or in case of failures, i.e.:
+  ```
+  terraform init
+  terraform plan
+  terraform apply
+  ```
+* To delete all resources created by Terraform, run:
+  ```
+  terraform destroy
+  ```
+  
+## Building the artifacts
+* Build the Flink Docker image
+```
+docker build -t eu.gcr.io/mpds-task-2/covid-engine:2.1.1 .
+```
+## Deploying the applications
+
+Deploy the Flink cluster
+
+```
+./bin/flink run-application \
+    --target kubernetes-application \
+    -Dkubernetes.cluster-id=mpds-task-2-cluster \
+    -Dkubernetes.container.image=eu.gcr.io/mpds-task-2/covid-engine:2.1.1 \
+    local:///opt/flink/usrlib/covid-engine-2.1.1.jar
+```
+
+Once the application cluster is deployed you can interact with it:
+```
+# List running job on the cluster
+$ ./bin/flink list --target kubernetes-application -Dkubernetes.cluster-id=mpds-task-2-cluster
+# Cancel running job
+$ ./bin/flink cancel --target kubernetes-application -Dkubernetes.cluster-id=mpds-task-2-cluster <jobId>  
+```
+_You can override configurations set in conf/flink-conf.yaml by passing key-value pairs -Dkey=value to bin/flink_
+
+Deploy the Hadoop cluster for HDFS:
+```
+gcloud dataproc clusters create hadoop --region=europe-west3
+```
+
+To access the Kubernetes cluster from a browser, open up the firewall with:
+```
+gcloud compute firewall-rules create nodeports \
+--allow tcp --source-ranges=0.0.0.0/0
+```
+## Troubleshooting
+* Sometimes the Terraform commands don't work immediately. In that case, repeat the Terraform commands (see above)
