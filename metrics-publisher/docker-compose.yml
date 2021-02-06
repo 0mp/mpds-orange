@@ -29,9 +29,13 @@ services:
     image: 'prom/prometheus:latest'
     ports:
       - '9090:9090'
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
     networks:
       - app-tier
-  adapter:
+  prometheus-kafka-adapter:
     image: 'telefonica/prometheus-kafka-adapter:1.7.0'
+    ports:
+      - '8080:8080'
     networks:
       - app-tier

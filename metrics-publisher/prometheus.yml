@@ -1,0 +1,7 @@
+remote_write:
+  - url: "http://prometheus-kafka-adapter:8080/receive"
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+    - targets: ['localhost:9090']
