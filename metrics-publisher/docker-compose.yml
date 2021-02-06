@@ -35,6 +35,8 @@ services:
       - app-tier
   prometheus-kafka-adapter:
     image: 'telefonica/prometheus-kafka-adapter:1.7.0'
+    environment:
+      - KAFKA_TOPIC=Metric
     ports:
       - '8080:8080'
     networks:
