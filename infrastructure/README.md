@@ -96,6 +96,22 @@ docker build -t eu.gcr.io/mpds-task-2/covid-engine:2.1.1 .
 ```
 ## Deploying the applications
 
+Deploy the Hadoop cluster for HDFS:
+```
+gcloud dataproc clusters create hadoop --region=europe-west3
+```
+
+Kafka, Prometheus, and Grafana can be deployed on a Kubernetes cluster using the Helm charts located in the `infrastructure/k8s/helm` directory. Configure which charts to deploy in the global values.yaml by setting enabled: true for each desired technology. Cluster sizes and ports for external access can also be specified here.
+Each subchart can be deployed by itself and contains its own values.yaml file with futher configurations. If deployed from the umbrella chart, values in the global values.yaml will overwrite the values in the subchart's values.yaml.
+
+Deploy the charts with:
+```
+helm install [DEPLOYMENT NAME] [CHART DIRECTORY]
+```
+Uninstall the charts with:
+```
+helm uninstall [DEPLOYMENT NAME]
+```
 Deploy the Flink cluster using the cli from the downloaded Flink package
 
 ```
@@ -115,17 +131,30 @@ $ ./bin/flink cancel --target kubernetes-application -Dkubernetes.cluster-id=mpd
 ```
 _You can override configurations set in conf/flink-conf.yaml by passing key-value pairs -Dkey=value to bin/flink_
 
-Deploy the Hadoop cluster for HDFS:
-```
-gcloud dataproc clusters create hadoop --region=europe-west3
-```
+## Viewing metrics in Grafana
 
-To access the Kubernetes cluster from a browser, open up the firewall with:
-```
-gcloud compute firewall-rules create nodeports \
---allow tcp --source-ranges=0.0.0.0/0
-```
-## Known Issues
+<p align="center">
+  <img width="460" height="300" src="images/grafana.png">
+</p>
+
+Grafana is accessible at <kubernetes_node_ip>:<nodeport>.
+The default nodeport is ``30080`` and the default username and password is ``admin``
+
+After logging into Grafana, the data source must be added.
+Navigate to: ``Configuration > Data Sources > Add data source > Prometheus``
+Set the Url to ``prometheus:9090`` and click save and test. You should see a green notification that the data source is working.
+
+To import the premade grafana dashboard to show metrics, navigate to:
+``Create > Import > Upload JSON file``
+Upload the ``grafana-dashboard.json`` file from the root directory.
+
+## Flink DSP Engine
+
+<p align="center">
+  <img width="460" height="300" src="images/pipeline.jpg">
+</p>
+
+## Troubleshooting
 * Sometimes the Terraform commands don't work immediately. In that case, repeat the Terraform commands (see above)
 * Update the latest GKE stable version if errors are thrown related to that on the Terraform main.tf file
 * Enable the APIs manually through the GCP console if required
