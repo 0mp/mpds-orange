@@ -76,7 +76,7 @@ _Skip this section if there is already an existent Kubernetes Cluster_
   ```
 * Configure kubectl with Terraform
   ```
-  gcloud container clusters get-credentials $(terraform output kubernetes_cluster_name) --region $(terraform output region)
+  gcloud container clusters get-credentials $(terraform output cluster_name) --zone $(terraform output zone)
   ```
 * Repeat the Terraform commands in the same order to apply new changes or in case of failures, i.e.:
   ```
@@ -84,11 +84,7 @@ _Skip this section if there is already an existent Kubernetes Cluster_
   terraform plan
   terraform apply
   ```
-* To delete all resources created by Terraform, run:
-  ```
-  terraform destroy
-  ```
-  
+
 ## Building the artifacts
 * Build the Flink Docker image
 ```
@@ -108,16 +104,21 @@ Deploy the charts with:
 ```
 helm install [DEPLOYMENT NAME] [CHART DIRECTORY]
 ```
-Uninstall the charts with:
-```
-helm uninstall [DEPLOYMENT NAME]
-```
+
+
+Get the Grafana URL to visit by running these commands in the same shell:
+  ```
+  export NODE_PORT=$(kubectl get --namespace default -o jsonpath="{.spec.ports[0].nodePort}" services grafana)
+  export NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="ExternalIP")].address}')
+  echo http://$NODE_IP:$NODE_PORT
+  ```
+
 Deploy the Flink cluster using the cli from the downloaded Flink package
 
 ```
 ./bin/flink run-application \
     --target kubernetes-application \
-    -Dkubernetes.cluster-id=mpds-task-2-cluster \
+    -Dkubernetes.cluster-id=flink-cluster \
     -Dkubernetes.container.image=eu.gcr.io/mpds-task-2/covid-engine:2.1.1 \
     local:///opt/flink/usrlib/covid-engine-2.1.1.jar
 ```
@@ -125,9 +126,9 @@ Deploy the Flink cluster using the cli from the downloaded Flink package
 Once the application cluster is deployed you can interact with it:
 ```
 # List running job on the cluster
-$ ./bin/flink list --target kubernetes-application -Dkubernetes.cluster-id=mpds-task-2-cluster
+$ ./bin/flink list --target kubernetes-application -Dkubernetes.cluster-id=flink-cluster
 # Cancel running job
-$ ./bin/flink cancel --target kubernetes-application -Dkubernetes.cluster-id=mpds-task-2-cluster <jobId>  
+$ ./bin/flink cancel --target kubernetes-application -Dkubernetes.cluster-id=flink-cluster <jobId>  
 ```
 _You can override configurations set in conf/flink-conf.yaml by passing key-value pairs -Dkey=value to bin/flink_
 
@@ -153,6 +154,24 @@ Upload the ``grafana-dashboard.json`` file from the root directory.
 <p align="center">
   <img width="460" height="300" src="images/pipeline.jpg">
 </p>
+
+## Removal & Cleanup
+Manual Resource Cleanup for FLink
+```
+kubectl delete deployment/flink-cluster
+```
+Uninstall the charts with:
+```
+  helm uninstall [DEPLOYMENT NAME]
+```
+Delete Dataproc-Cluster
+```
+  gcloud dataproc clusters delete hadoop --region=europe-west3
+```
+To delete all resources created by Terraform, run:
+  ```
+  terraform destroy
+  ```
 
 ## Troubleshooting
 * Sometimes the Terraform commands don't work immediately. In that case, repeat the Terraform commands (see above)

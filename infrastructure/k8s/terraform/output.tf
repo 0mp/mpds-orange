@@ -3,6 +3,11 @@ output "region" {
   description = "region"
 }
 
+output "zone" {
+  value       = var.zones[0]
+  description = "zone"
+}
+
 output "cluster_name" {
   description = "Cluster name"
   value       = "${var.project_id}-cluster"
