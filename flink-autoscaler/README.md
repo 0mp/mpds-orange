@@ -22,6 +22,8 @@ r2dbc:
     username: postgres
 ```
 * Open the cli and navigate to the project root path and execute the following command to start the required Docker Containers
+* Run Apache Kafka (e.g. through a Docker container https://hub.docker.com/r/landoop/kafka-lenses-dev landoop/kafka-lenses-dev)
+* Make sure that the application is pointing to Kafka on the resources/application.yml file (e.g. localhost:9092)
 ``` 
 docker-compose up -d
 ```
@@ -79,4 +81,7 @@ helm uninstall flink-autoscaler
 * Reactive Programming with Project Reactor: https://projectreactor.io/
 * Spring Boot Dependency Injection: https://www.baeldung.com/spring-dependency-injection
 * Introduction to Project Lombok: https://www.baeldung.com/intro-to-project-lombok
-
+* Kafka for development: https://lenses.io/box/
+* Reactor Kafka Reference Guide: https://projectreactor.io/docs/kafka/release/reference/
+* Kafka Performance Tuning — Ways for Kafka Optimization: https://medium.com/@rinu.gour123/kafka-performance-tuning-ways-for-kafka-optimization-fdee5b19505b
+    

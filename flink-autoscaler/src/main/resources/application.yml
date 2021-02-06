@@ -25,3 +25,9 @@ r2dbc:
     password: postgres
   jpa:
     show-sql: true
+# Kafka config
+kafka:
+  bootstrap-server: localhost:9092
+  topic: metric
+  client-id-config: flink-autoscaler
+  acks-config: all
