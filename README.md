@@ -22,6 +22,90 @@ The following metrics are of interest to the Autoscaler:
 - CPU Utilization (to do, probably available via Kubernetes API's)
 - Memory Usage (to do, probably avialable via Kubernetes API's)
 
+In order to obtain those metrics from Prometheus, it is necessary to send a POST request to the `/api/v1/query` endpoint. Here's an example using curl:
+
+```
+curl -X POST \
+  -F query=kafka_server_brokertopicmetrics_total_messagesinpersec_count \
+  prometheus:9090/api/v1/query
+```
+
+
+<details>
+  <summary>The response body looks like this:</summary>
+
+```
+{
+  "status": "success",
+  "data": {
+    "resultType": "vector",
+    "result": [
+      {
+        "metric": {
+          "__name__": "kafka_server_brokertopicmetrics_total_messagesinpersec_count",
+          "app_kubernetes_io_component": "kafka",
+          "app_kubernetes_io_instance": "mpds",
+          "app_kubernetes_io_managed_by": "Helm",
+          "app_kubernetes_io_name": "kafka",
+          "controller_revision_hash": "kafka-7dc6cd8b54",
+          "helm_sh_chart": "kafka-11.8.2",
+          "instance": "10.1.0.10:5556",
+          "job": "kubernetes-pods",
+          "kubernetes_namespace": "default",
+          "kubernetes_pod_name": "kafka-1",
+          "statefulset_kubernetes_io_pod_name": "kafka-1"
+        },
+        "value": [
+          1612726221.53,
+          "84822793"
+        ]
+      },
+      {
+        "metric": {
+          "__name__": "kafka_server_brokertopicmetrics_total_messagesinpersec_count",
+          "app_kubernetes_io_component": "kafka",
+          "app_kubernetes_io_instance": "mpds",
+          "app_kubernetes_io_managed_by": "Helm",
+          "app_kubernetes_io_name": "kafka",
+          "controller_revision_hash": "kafka-7dc6cd8b54",
+          "helm_sh_chart": "kafka-11.8.2",
+          "instance": "10.1.1.6:5556",
+          "job": "kubernetes-pods",
+          "kubernetes_namespace": "default",
+          "kubernetes_pod_name": "kafka-0",
+          "statefulset_kubernetes_io_pod_name": "kafka-0"
+        },
+        "value": [
+          1612726221.53,
+          "126520535"
+        ]
+      },
+      {
+        "metric": {
+          "__name__": "kafka_server_brokertopicmetrics_total_messagesinpersec_count",
+          "app_kubernetes_io_component": "kafka",
+          "app_kubernetes_io_instance": "mpds",
+          "app_kubernetes_io_managed_by": "Helm",
+          "app_kubernetes_io_name": "kafka",
+          "controller_revision_hash": "kafka-7dc6cd8b54",
+          "helm_sh_chart": "kafka-11.8.2",
+          "instance": "10.1.2.6:5556",
+          "job": "kubernetes-pods",
+          "kubernetes_namespace": "default",
+          "kubernetes_pod_name": "kafka-2",
+          "statefulset_kubernetes_io_pod_name": "kafka-2"
+        },
+        "value": [
+          1612726221.53,
+          "126534259"
+        ]
+      }
+    ]
+  }
+}
+```
+</details>
+
 #### Prediction models
 
 There are two prediction models available at the moment: a long-term one, and a short-term one. Both models are predicting the load based on the Kafka message rates.
