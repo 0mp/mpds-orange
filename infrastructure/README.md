@@ -142,6 +142,15 @@ Deploy the Flink cluster using the cli from the downloaded Flink package
     -Dkubernetes.cluster-id=flink-cluster \
     -Dkubernetes.container.image=eu.gcr.io/mpds-task-2/covid-engine:2.1.2 \
     -Dkubernetes.container.image.pull-policy=Always \
+    -Dkubernetes.jobmanager.annotations=prometheus.io/scrape:'true',prometheus.io/port:'9999' \
+    -Dkubernetes.taskmanager.annotations=prometheus.io/scrape:'true',prometheus.io/port:'9999' \
+    -Dmetrics.latency.granularity=OPERATOR \
+    -Dmetrics.latency.interval=1000 \
+    -Dmetrics.reporters=prom \
+    -Dmetrics.reporter.prom.class=org.apache.flink.metrics.prometheus.PrometheusReporter \
+    -Dmetrics.reporter.prom.port=9999 \
+    -Dmetrics.reporter.jmx.class=org.apache.flink.metrics.jmx.JMXReporter \
+    -Dmetrics.reporter.jmx.port=8789 \
     local:///opt/flink/usrlib/covid-engine-2.1.2.jar
 ```
 
