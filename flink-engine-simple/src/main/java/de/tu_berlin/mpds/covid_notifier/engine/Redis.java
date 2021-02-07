@@ -1,16 +1,14 @@
 package de.tu_berlin.mpds.covid_notifier.engine;
 
 
-import de.tu_berlin.mpds.covid_notifier.config.RedisConfig;
-import org.apache.kafka.common.protocol.types.Field;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Pipeline;
 
-
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.*;
+import java.util.LinkedHashSet;
+import java.util.List;
 
 @Service
 public class Redis {
@@ -23,7 +21,7 @@ public class Redis {
 
         private Connector() {
 
-            this.jedis = new Jedis("localhost", 6379, 1800);
+            this.jedis = new Jedis("redis", 6379, 1800);
         }
 
 
