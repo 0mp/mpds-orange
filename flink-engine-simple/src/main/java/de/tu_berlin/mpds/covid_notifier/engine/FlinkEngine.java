@@ -23,10 +23,14 @@ import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.OutputTag;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.ApplicationArguments;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -35,39 +39,44 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class FlinkEngine {
 
+    private static final Logger LOG = LoggerFactory.getLogger(FlinkEngine.class);
+
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
 
     @Autowired
-    private  StreamExecutionEnvironment env;
+    private StreamExecutionEnvironment env;
 
     @Autowired
     private Properties properties;
+
+    private String checkpointPath;
 
     final OutputTag<InfectionReported> outputTag = new OutputTag<InfectionReported>("InfectionReported") {
     };
 
     /**
      * StreamExecutionEnvironment
+     *
      * @return StreamExecutionEnvironment
      * Initialize streaming environment config:
-     *      - Fail Rate policy
-     *      - HDFS Checkpointing
-     *      - Disabling Chain Operations
+     * - Fail Rate policy
+     * - HDFS Checkpointing
+     * - Disabling Chain Operations
      */
     @Bean
-    public StreamExecutionEnvironment env(){
-        // Checking input parameters
-//        final MultipleParameterTool params = MultipleParameterTool.fromArgs(args);
+    public StreamExecutionEnvironment env(ApplicationArguments progArgs) {
+        LOG.info("--PROVIDED ARGS: " + Arrays.toString(progArgs.getSourceArgs()));
+        final MultipleParameterTool params = MultipleParameterTool.fromArgs(progArgs.getSourceArgs());
 
+        if (params.has("checkpoint")) {
+            LOG.info("Provided checkpoint path for Flink: " + params.get("checkpoint"));
+            this.checkpointPath = params.get("checkpoint");
+        }
+        env = StreamExecutionEnvironment.getExecutionEnvironment();
         // make parameters available in the web interface
-//        env.getConfig().setGlobalJobParameters(params);
-//        if (params.has("input")) {
-//            for (String input : params.getMultiParameterRequired("input")) {
-//
-//            }
-//        }
-        env=  StreamExecutionEnvironment.getExecutionEnvironment();
+        env.getConfig().setGlobalJobParameters(params);
+
         env.disableOperatorChaining();
         env.enableCheckpointing(1000000000L);
         CheckpointConfig config = env.getCheckpointConfig();
@@ -76,15 +85,14 @@ public class FlinkEngine {
                 3, // max failures per interval
                 Time.of(5, TimeUnit.MINUTES), //time interval for measuring failure rate
                 Time.of(10, TimeUnit.SECONDS) // delay
-        ));//9000
-//        --input
-        env.setStateBackend(new FsStateBackend("hdfs://35.246.133.58:8051/flink/checkpoints", true));
-//        hdfs://hadoop-hadoop-hdfs-nn:9000/input/tolstoy-war-and-peace.txt
+        ));
+        env.setStateBackend(new FsStateBackend(this.checkpointPath, true));
         return env;
     }
 
     /**
      * Properties
+     *
      * @return properties
      * Kafka Configuration
      */
@@ -94,7 +102,6 @@ public class FlinkEngine {
         properties.setProperty("group.id", "covidAnalyser");
         return properties;
     }
-
 
     public static class InfectionRedisMapper extends RichFlatMapFunction<InfectionReported, String> {
 
@@ -113,9 +120,10 @@ public class FlinkEngine {
 
         /**
          * Infection Mapper
-         * @param  data
-         * @return String
          *
+         * @param data
+         * @return String
+         * <p>
          * Request contacts from Redis of set of contacts for personId from param
          */
         @Override
@@ -145,9 +153,10 @@ public class FlinkEngine {
 
         /**
          * DomainEventSplitter
+         *
          * @param data
          * @return PersonContact
-         *
+         * <p>
          * Gathers PersonContact events into outgoing collector, places InfectionReported in context with tag
          */
 
@@ -167,13 +176,12 @@ public class FlinkEngine {
 
     /**
      * highRiskContactProducer
-     * @throws Exception
      *
-     * 1. Initialize Kafka Consumer to topic 'covid' from earliest start. Desierialize to DomainEvent
-     * 2. Add Kafka Consumer as environment source
-     * 3. Split the Stream into PersonContact and InfectionReported streams
-     * 4. Process Contact Stream: write to Redis
-     * 5. Process Infection Stream: Request Contact set from Redis, sink to Kafka topic 'highrisk'
+     * @throws Exception 1. Initialize Kafka Consumer to topic 'covid' from earliest start. Desierialize to DomainEvent
+     *                   2. Add Kafka Consumer as environment source
+     *                   3. Split the Stream into PersonContact and InfectionReported streams
+     *                   4. Process Contact Stream: write to Redis
+     *                   5. Process Infection Stream: Request Contact set from Redis, sink to Kafka topic 'highrisk'
      */
     @Bean
     public void highRiskContactProducer() throws Exception {
@@ -183,7 +191,7 @@ public class FlinkEngine {
                 "covid",
                 new DomainEventSchema(),
                 properties);
-       // covidSource.setStartFromEarliest();
+        // covidSource.setStartFromEarliest();
 
         // 2. Add Kafka Consumer as environment source
         DataStream<DomainEvent> covidStream = env.addSource(covidSource)
@@ -197,10 +205,11 @@ public class FlinkEngine {
                 .getSideOutput(outputTag);
 
 
-
         // 5. Process Infection Stream: Request Contact set from Redis, sink to Kafka topic 'highrisk'
         infectionsStream
-                .map(data -> {return Long.toString(data.getPersonId());})
+                .map(data -> {
+                    return Long.toString(data.getPersonId());
+                })
                 .addSink(new FlinkKafkaProducer<String>(
                         "highrisk", new SimpleStringSchema(), properties
                 ))
