@@ -58,18 +58,22 @@ def eval_lambda(model, lambda_func, time_range = 24, tick_size = 0.1, eval_from 
         plt.plot(future_ticks, y_hat[0].cpu())
         
 
-def forward_walk_train(model, time_series, optimizer, criterion, dev, seq_len=32, future=8):
+def forward_walk_train(model, time_series, optimizer, criterion, seq_len=32, future=8):
     
     start = time() * 1000
-    loss = 0
-    iters = time_series.size(1) - (seq_len + future)
+    loss_sum = 0
+    iters = time_series.size(2) - (seq_len + future) + 1
+    #print(iters)
     for i in range(iters):
-        loss += criterion(model(time_series[i:(seq_len+i)]), time_series[(seq_len+i):(seq_len+i+future)]).item()
+        loss = criterion(model(time_series[:,:,i:(seq_len+i)]), time_series[:,0,(seq_len+i):(seq_len+i+future)])
+        loss_sum += loss.item()
         loss.backward()
         optimizer.step()
         
-    print(f"Training completed in {int(round(time()*1000 - start))} ms. Loss: {loss/iters}")
-        
+    duration = int(round(time()*1000 - start))
+    loss_avg = loss_sum/iters
+    #print(f"Training completed in {duration} ms - Loss: {}")
+    return duration, loss_avg
         
         
             

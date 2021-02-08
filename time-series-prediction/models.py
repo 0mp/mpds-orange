@@ -41,7 +41,7 @@ class GRU(nn.Module):
 
 class CNN1D_1l_RNN(nn.Module):
     
-    def __init__(self, hidden_dim, ts_len, stacked=2, future = 1, k_size=16, stride=4, ch_out=16, input_dim=1, cell_type="GRU"):
+    def __init__(self, hidden_dim, ts_len, stacked=3, future = 1, k_size=16, stride=4, ch_out=16, input_dim=1, cell_type="GRU"):
         
         super().__init__()
         self.conv1 = nn.Conv1d(input_dim, ch_out, k_size, stride)

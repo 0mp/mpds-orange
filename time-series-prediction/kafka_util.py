@@ -22,7 +22,7 @@ def get_producer(topic, ip, batch_size=1):
                              batch_size = 0
                             )
         
-def sim_traffic(func, ip, topic="statistics", interval = 1000, amount = 1000):
+def sim_traffic(func, ip, topic="statistics", interval = 300, amount = 1000):
     
     producer = get_producer(topic, ip)
     
