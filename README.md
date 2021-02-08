@@ -23,10 +23,6 @@ The following metrics are potentially interesting, but are not available availab
 - CPU Utilization (to do, probably available via Kubernetes API's)
 - Memory Usage (to do, probably avialable via Kubernetes API's)
 
-The following metrics were considered in the past, but are no not too imporarnt at the moment.
-
-- Records per second (potentially `flink_taskmanager_job_task_numRecordsIn` in Prometheus)
-
 In order to obtain those metrics from Prometheus, it is necessary to send a POST request to the `/api/v1/query` endpoint. Here's an example using curl:
 
 ```
