@@ -52,6 +52,8 @@ public class FlinkEngine {
 
     private String checkpointPath;
 
+    private long checkpointInterval;
+
     final OutputTag<InfectionReported> outputTag = new OutputTag<InfectionReported>("InfectionReported") {
     };
 
@@ -73,12 +75,19 @@ public class FlinkEngine {
             LOG.info("Provided checkpoint path for Flink: " + params.get("checkpoint"));
             this.checkpointPath = params.get("checkpoint");
         }
+
+        if (params.has("checkpoint.interval")) {
+            LOG.info("Provided checkpoint interval for Flink: " + params.get("checkpoint.interval"));
+            this.checkpointInterval = Long.parseLong(params.get("checkpoint.interval"));
+        }
+
         env = StreamExecutionEnvironment.getExecutionEnvironment();
         // make parameters available in the web interface
         env.getConfig().setGlobalJobParameters(params);
 
         env.disableOperatorChaining();
-        env.enableCheckpointing(1000000000L);
+//                1000000000L
+        env.enableCheckpointing(checkpointInterval);
         CheckpointConfig config = env.getCheckpointConfig();
         config.enableExternalizedCheckpoints(CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);
         env.setRestartStrategy(RestartStrategies.failureRateRestart(

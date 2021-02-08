@@ -18,11 +18,11 @@ on-premise, the Helm charts can be used to do the deployments of the application
 ## Building the artifacts
 * Build the Flink Docker image using the files under /infrastructure/docker/flink from the project root path
 ```
-docker build -t eu.gcr.io/mpds-task-2/covid-engine:2.2.1 .
+docker build -t eu.gcr.io/mpds-task-2/covid-engine:2.3.0 .
 ```
 * Push the created image to the Container Registry
 ```
-docker push eu.gcr.io/mpds-task-2/covid-engine:2.2.1
+docker push eu.gcr.io/mpds-task-2/covid-engine:2.3.0
 ```
 
 ## Setup GKE cluster
@@ -147,11 +147,11 @@ $ kubectl create clusterrolebinding flink-role-binding-flink --clusterrole=edit 
 
 Deploy the Flink cluster using the cli from the downloaded Flink package
 
-```    
+```        
 ./bin/flink run-application \
     --target kubernetes-application \
     -Dkubernetes.cluster-id=flink-cluster \
-    -Dkubernetes.container.image=eu.gcr.io/mpds-task-2/covid-engine:2.2.1 \
+    -Dkubernetes.container.image=eu.gcr.io/mpds-task-2/covid-engine:2.3.0 \
     -Dkubernetes.container.image.pull-policy=Always \
     -Dkubernetes.jobmanager.annotations=prometheus.io/scrape:'true',prometheus.io/port:'9999' \
     -Dkubernetes.taskmanager.annotations=prometheus.io/scrape:'true',prometheus.io/port:'9999' \
@@ -162,8 +162,9 @@ Deploy the Flink cluster using the cli from the downloaded Flink package
     -Dmetrics.reporter.prom.port=9999 \
     -Dmetrics.reporter.jmx.class=org.apache.flink.metrics.jmx.JMXReporter \
     -Dmetrics.reporter.jmx.port=8789 \
-    local:///opt/flink/usrlib/covid-engine-2.2.1.jar \
-    --checkpoint hdfs://35.246.133.58:8051/flink/checkpoints
+    local:///opt/flink/usrlib/covid-engine-2.3.0.jar \
+    --checkpoint hdfs://35.246.133.58:8051/flink/checkpoints \
+    --checkpoint.interval 300000
 ```
 
 Once the application cluster is deployed you can interact with it:
