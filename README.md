@@ -18,16 +18,29 @@ The following metrics are of interest to the Autoscaler:
 - Sink health metrics:
     - Maybe `kafka_controller_kafkacontroller_controllerstate_value` offers some interesting insights (details: https://cwiki.apache.org/confluence/display/KAFKA/KIP-143%3A+Controller+Health+Metrics)?
 
-In order to obtain those metrics from Prometheus, it is necessary to send a POST request to the `/api/v1/query` endpoint. Here's an example using curl:
-
-```
-curl -X POST \
-  -F query=kafka_server_brokertopicmetrics_total_messagesinpersec_count \
-  prometheus:9090/api/v1/query
-```
+In order to obtain those metrics from Prometheus, it is necessary to send a POST request to the `/api/v1/query` endpoint.
 
 <details>
-  <summary>The response body looks like this:</summary>
+  <summary>Example of a Prometheus API request and response:</summary>
+
+Here's the request. It is not a single HTTP request, but a separate request for each metric. Although it is technically possible to get all the metrics at once (as per [the documentation](https://prometheus.io/docs/prometheus/latest/querying/basics/)), we would have to do aggregations on our own. Having multiple queries is not a problem, however. We can simply specify a `time` field in the HTTP request to retrieve a consistent set of metrics.
+
+```sh
+request() {
+	address="http://prometheus:30090"
+	endpoint="/api/v1/query"
+	url="${address}${endpoint}"
+	time="2021-02-08T10:10:51.781Z"
+
+	curl -Ss -X POST -F query="$1" -F time="$time" "$url" | jq
+}
+
+request "avg(avg by (operator_id) (flink_taskmanager_job_latency_source_id_operator_id_operator_subtask_index_latency{quantile=\"0.95\"}))"
+request "avg(kafka_server_brokertopicmetrics_total_messagesinpersec_count)"
+request kafka_controller_kafkacontroller_controllerstate_value
+```
+
+The response:
 
 ```
 {
@@ -36,8 +49,38 @@ curl -X POST \
     "resultType": "vector",
     "result": [
       {
+        "metric": {},
+        "value": [
+          1612779051.781,
+          "181.43333333333334"
+        ]
+      }
+    ]
+  }
+}
+{
+  "status": "success",
+  "data": {
+    "resultType": "vector",
+    "result": [
+      {
+        "metric": {},
+        "value": [
+          1612779051.781,
+          "112629192.33333334"
+        ]
+      }
+    ]
+  }
+}
+{
+  "status": "success",
+  "data": {
+    "resultType": "vector",
+    "result": [
+      {
         "metric": {
-          "__name__": "kafka_server_brokertopicmetrics_total_messagesinpersec_count",
+          "__name__": "kafka_controller_kafkacontroller_controllerstate_value",
           "app_kubernetes_io_component": "kafka",
           "app_kubernetes_io_instance": "mpds",
           "app_kubernetes_io_managed_by": "Helm",
@@ -51,13 +94,13 @@ curl -X POST \
           "statefulset_kubernetes_io_pod_name": "kafka-1"
         },
         "value": [
-          1612726221.53,
-          "84822793"
+          1612779051.781,
+          "0"
         ]
       },
       {
         "metric": {
-          "__name__": "kafka_server_brokertopicmetrics_total_messagesinpersec_count",
+          "__name__": "kafka_controller_kafkacontroller_controllerstate_value",
           "app_kubernetes_io_component": "kafka",
           "app_kubernetes_io_instance": "mpds",
           "app_kubernetes_io_managed_by": "Helm",
@@ -71,13 +114,13 @@ curl -X POST \
           "statefulset_kubernetes_io_pod_name": "kafka-0"
         },
         "value": [
-          1612726221.53,
-          "126520535"
+          1612779051.781,
+          "0"
         ]
       },
       {
         "metric": {
-          "__name__": "kafka_server_brokertopicmetrics_total_messagesinpersec_count",
+          "__name__": "kafka_controller_kafkacontroller_controllerstate_value",
           "app_kubernetes_io_component": "kafka",
           "app_kubernetes_io_instance": "mpds",
           "app_kubernetes_io_managed_by": "Helm",
@@ -91,8 +134,8 @@ curl -X POST \
           "statefulset_kubernetes_io_pod_name": "kafka-2"
         },
         "value": [
-          1612726221.53,
-          "126534259"
+          1612779051.781,
+          "0"
         ]
       }
     ]
