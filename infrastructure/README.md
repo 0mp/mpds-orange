@@ -103,6 +103,17 @@ Deploy the Hadoop cluster for HDFS:
 gcloud dataproc clusters create hadoop --region=europe-west3
 ```
 
+SSH into the master node and create folder on HDFS
+```
+hadoop fs -mkdir /flink
+hadoop fs -mkdir /flink/checkpoints
+```
+
+Check the checkpoint file created by Flink on the Hadoop master node
+```
+hadoop fs -ls hdfs://${external-ip-hadoop-master-node}:8051/flink/checkpoints
+```
+
 ### Deploying Kafka, Prometheus, Grafana
 Kafka, Prometheus, and Grafana can be deployed on a Kubernetes cluster using the Helm charts located in the `infrastructure/k8s/helm` directory. Configure which charts to deploy in the global values.yaml by setting enabled: true for each desired technology. Cluster sizes and ports for external access can also be specified here.
 Each subchart can be deployed by itself and contains its own values.yaml file with futher configurations. If deployed from the umbrella chart, values in the global values.yaml will overwrite the values in the subchart's values.yaml.
@@ -136,11 +147,11 @@ $ kubectl create clusterrolebinding flink-role-binding-flink --clusterrole=edit 
 
 Deploy the Flink cluster using the cli from the downloaded Flink package
 
-```
+```    
 ./bin/flink run-application \
     --target kubernetes-application \
     -Dkubernetes.cluster-id=flink-cluster \
-    -Dkubernetes.container.image=eu.gcr.io/mpds-task-2/covid-engine:2.1.2 \
+    -Dkubernetes.container.image=eu.gcr.io/mpds-task-2/covid-engine:2.2.0 \
     -Dkubernetes.container.image.pull-policy=Always \
     -Dkubernetes.jobmanager.annotations=prometheus.io/scrape:'true',prometheus.io/port:'9999' \
     -Dkubernetes.taskmanager.annotations=prometheus.io/scrape:'true',prometheus.io/port:'9999' \
@@ -151,7 +162,7 @@ Deploy the Flink cluster using the cli from the downloaded Flink package
     -Dmetrics.reporter.prom.port=9999 \
     -Dmetrics.reporter.jmx.class=org.apache.flink.metrics.jmx.JMXReporter \
     -Dmetrics.reporter.jmx.port=8789 \
-    local:///opt/flink/usrlib/covid-engine-2.1.2.jar
+    local:///opt/flink/usrlib/covid-engine-2.2.0.jar
 ```
 
 Once the application cluster is deployed you can interact with it:

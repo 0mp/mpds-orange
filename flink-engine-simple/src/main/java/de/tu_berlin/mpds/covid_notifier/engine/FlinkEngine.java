@@ -10,8 +10,10 @@ import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.api.common.time.Time;
+import org.apache.flink.api.java.utils.MultipleParameterTool;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.metrics.Counter;
+import org.apache.flink.runtime.state.filesystem.FsStateBackend;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.CheckpointConfig;
@@ -55,6 +57,16 @@ public class FlinkEngine {
      */
     @Bean
     public StreamExecutionEnvironment env(){
+        // Checking input parameters
+//        final MultipleParameterTool params = MultipleParameterTool.fromArgs(args);
+
+        // make parameters available in the web interface
+//        env.getConfig().setGlobalJobParameters(params);
+//        if (params.has("input")) {
+//            for (String input : params.getMultiParameterRequired("input")) {
+//
+//            }
+//        }
         env=  StreamExecutionEnvironment.getExecutionEnvironment();
         env.disableOperatorChaining();
         env.enableCheckpointing(1000000000L);
@@ -64,7 +76,10 @@ public class FlinkEngine {
                 3, // max failures per interval
                 Time.of(5, TimeUnit.MINUTES), //time interval for measuring failure rate
                 Time.of(10, TimeUnit.SECONDS) // delay
-        ));
+        ));//9000
+//        --input
+        env.setStateBackend(new FsStateBackend("hdfs://35.246.133.58:8051/flink/checkpoints", true));
+//        hdfs://hadoop-hadoop-hdfs-nn:9000/input/tolstoy-war-and-peace.txt
         return env;
     }
 
