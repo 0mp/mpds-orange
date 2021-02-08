@@ -15,12 +15,17 @@ The following metrics are of interest to the Autoscaler:
 
 - Max message latency (`flink_taskmanager_job_latency_source_id_operator_id_operator_subtask_index_latency` in Prometheus)
 - Kafka messages in per second (`kafka_server_brokertopicmetrics_total_messagesinpersec_count` in Prometheus)
-- Records per second (potentially `flink_taskmanager_job_task_numRecordsIn` in Prometheus)
-- Network in/out (to do)
 - Sink health metrics:
     - Maybe `kafka_controller_kafkacontroller_controllerstate_value` offers some interesting insights (details: https://cwiki.apache.org/confluence/display/KAFKA/KIP-143%3A+Controller+Health+Metrics)?
+
+The following metrics are potentially interesting, but are not available available at this moment in Prometheus:
+- Network in/out (to do)
 - CPU Utilization (to do, probably available via Kubernetes API's)
 - Memory Usage (to do, probably avialable via Kubernetes API's)
+
+The following metrics were considered in the past, but are no not too imporarnt at the moment.
+
+- Records per second (potentially `flink_taskmanager_job_task_numRecordsIn` in Prometheus)
 
 In order to obtain those metrics from Prometheus, it is necessary to send a POST request to the `/api/v1/query` endpoint. Here's an example using curl:
 
