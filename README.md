@@ -18,11 +18,6 @@ The following metrics are of interest to the Autoscaler:
 - Sink health metrics:
     - Maybe `kafka_controller_kafkacontroller_controllerstate_value` offers some interesting insights (details: https://cwiki.apache.org/confluence/display/KAFKA/KIP-143%3A+Controller+Health+Metrics)?
 
-The following metrics are potentially interesting, but are not available available at this moment in Prometheus:
-- Network in/out (to do)
-- CPU Utilization (to do, probably available via Kubernetes API's)
-- Memory Usage (to do, probably avialable via Kubernetes API's)
-
 In order to obtain those metrics from Prometheus, it is necessary to send a POST request to the `/api/v1/query` endpoint. Here's an example using curl:
 
 ```
@@ -30,7 +25,6 @@ curl -X POST \
   -F query=kafka_server_brokertopicmetrics_total_messagesinpersec_count \
   prometheus:9090/api/v1/query
 ```
-
 
 <details>
   <summary>The response body looks like this:</summary>
@@ -106,6 +100,12 @@ curl -X POST \
 }
 ```
 </details>
+
+The following metrics are potentially interesting, but are not available available at this moment in Prometheus:
+- Network in/out (to do)
+- CPU Utilization (to do, probably available via Kubernetes API's)
+- Memory Usage (to do, probably avialable via Kubernetes API's)
+
 
 #### Prediction models
 
