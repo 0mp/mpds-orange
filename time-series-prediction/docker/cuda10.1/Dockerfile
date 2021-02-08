@@ -8,26 +8,29 @@ RUN apt-get install -y --no-install-recommends\
 	cmake \
 	git \
 	curl \
+	iputils-ping \
 	python3 \
 	python3-pip \
 	python3-dev \
 	python3-setuptools \
 	python3-wheel
 
-Run pip3 install --upgrade pip
-	
+Run python3 -m pip install --upgrade pip
+
 COPY requirements.txt /requirements.txt
+RUN python3 -m pip install --no-cache-dir -r /requirements.txt
 
-RUN pip3 install --no-cache-dir -r requirements.txt
+#RUN useradd --create-home --shell /bin/bash --gid root caesar
 
+#ENV HOME=/home/caesar
+#RUN mkdir -p /home/caesar && chmod 777 /home/caesar
+#WORKDIR /home/caeser
+
+	
 EXPOSE 8888
 
-RUN useradd --create-home --shell /bin/bash --gid root caeser
+RUN mkdir /mount
+RUN chmod 777 /mount
+WORKDIR /mount
 
-USER caeser
-
-WORKDIR /home/caeser
-
-RUN mkdir mount
-
-CMD ["jupyter", "notebook", "--allow-root", "--notebook-dir=/home/caeser/mount", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--NotebookApp.token=timeseries"]
+CMD ["jupyter", "notebook", "--allow-root", "--notebook-dir=/mount", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--NotebookApp.token=timeseries"]

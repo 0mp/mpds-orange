@@ -39,7 +39,7 @@ class GRU(nn.Module):
         return prediction
     
 
-class CNN1D_1l_Recurr(nn.Module):
+class CNN1D_1l_RNN(nn.Module):
     
     def __init__(self, hidden_dim, ts_len, stacked=2, future = 1, k_size=16, stride=4, ch_out=16, input_dim=1, cell_type="GRU"):
         
@@ -55,7 +55,7 @@ class CNN1D_1l_Recurr(nn.Module):
         return self.recurr_cell(ts)    
     
     
-class CNN1D_2l_Recurr(nn.Module):
+class CNN1D_2l_RNN(nn.Module):
     
     def __init__(self, hidden_dim, ts_len, stacked=2, future = 1, k_size=16, stride=4, ch_out=16, input_dim=1, cell_type="GRU"):
         
