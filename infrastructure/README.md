@@ -14,6 +14,16 @@ on-premise, the Helm charts can be used to do the deployments of the application
   wget https://downloads.apache.org/flink/flink-1.12.1/flink-1.12.1-bin-scala_2.12.tgz 
   tar -xf flink-1.12.1-bin-scala_2.12.tgz
   ```
+  
+## Building the artifacts
+* Build the Flink Docker image using the files under /infrastructure/docker/flink from the project root path
+```
+docker build -t eu.gcr.io/mpds-task-2/covid-engine:2.1.2 .
+```
+* Push the created image to the Container Registry
+```
+docker push eu.gcr.io/mpds-task-2/covid-engine:2.1.2
+```
 
 ## Setup GKE cluster
 
@@ -84,19 +94,16 @@ _Skip this section if there is already an existent Kubernetes Cluster_
   terraform plan
   terraform apply
   ```
-
-## Building the artifacts
-* Build the Flink Docker image
-```
-docker build -t eu.gcr.io/mpds-task-2/covid-engine:2.1.1 .
-```
+  
 ## Deploying the applications
 
+### Deploying Hadoop for HDFS
 Deploy the Hadoop cluster for HDFS:
 ```
 gcloud dataproc clusters create hadoop --region=europe-west3
 ```
 
+### Deploying Kafka, Prometheus, Grafana
 Kafka, Prometheus, and Grafana can be deployed on a Kubernetes cluster using the Helm charts located in the `infrastructure/k8s/helm` directory. Configure which charts to deploy in the global values.yaml by setting enabled: true for each desired technology. Cluster sizes and ports for external access can also be specified here.
 Each subchart can be deployed by itself and contains its own values.yaml file with futher configurations. If deployed from the umbrella chart, values in the global values.yaml will overwrite the values in the subchart's values.yaml.
 
@@ -105,7 +112,6 @@ Deploy the charts with:
 helm install [DEPLOYMENT NAME] [CHART DIRECTORY]
 ```
 
-
 Get the Grafana URL to visit by running these commands in the same shell:
   ```
   export NODE_PORT=$(kubectl get --namespace default -o jsonpath="{.spec.ports[0].nodePort}" services grafana)
@@ -113,14 +119,39 @@ Get the Grafana URL to visit by running these commands in the same shell:
   echo http://$NODE_IP:$NODE_PORT
   ```
 
+### Deploying native Kubernetes Apache Flink 
+
+Create clusterrolebinding on Kubernetes for Flink
+```
+$ kubectl create clusterrolebinding flink-role-binding-default --clusterrole=edit --serviceaccount=default:default
+```
+
+If you do not want to use the default service account, use the following command to create a new flink-service-account service account and set the role binding. 
+Then use the config option -Dkubernetes.service-account=flink-service-account to make the JobManager pod use the flink-service-account service account to create/delete TaskManager pods and leader ConfigMaps. 
+Also this will allow the TaskManager to watch leader ConfigMaps to retrieve the address of JobManager and ResourceManager.
+```
+$ kubectl create serviceaccount flink-service-account
+$ kubectl create clusterrolebinding flink-role-binding-flink --clusterrole=edit --serviceaccount=default:flink-service-account
+```
+
 Deploy the Flink cluster using the cli from the downloaded Flink package
 
 ```
 ./bin/flink run-application \
     --target kubernetes-application \
     -Dkubernetes.cluster-id=flink-cluster \
-    -Dkubernetes.container.image=eu.gcr.io/mpds-task-2/covid-engine:2.1.1 \
-    local:///opt/flink/usrlib/covid-engine-2.1.1.jar
+    -Dkubernetes.container.image=eu.gcr.io/mpds-task-2/covid-engine:2.1.2 \
+    -Dkubernetes.container.image.pull-policy=Always \
+    -Dkubernetes.jobmanager.annotations=prometheus.io/scrape:'true',prometheus.io/port:'9999' \
+    -Dkubernetes.taskmanager.annotations=prometheus.io/scrape:'true',prometheus.io/port:'9999' \
+    -Dmetrics.latency.granularity=OPERATOR \
+    -Dmetrics.latency.interval=1000 \
+    -Dmetrics.reporters=prom \
+    -Dmetrics.reporter.prom.class=org.apache.flink.metrics.prometheus.PrometheusReporter \
+    -Dmetrics.reporter.prom.port=9999 \
+    -Dmetrics.reporter.jmx.class=org.apache.flink.metrics.jmx.JMXReporter \
+    -Dmetrics.reporter.jmx.port=8789 \
+    local:///opt/flink/usrlib/covid-engine-2.1.2.jar
 ```
 
 Once the application cluster is deployed you can interact with it:
@@ -131,6 +162,8 @@ $ ./bin/flink list --target kubernetes-application -Dkubernetes.cluster-id=flink
 $ ./bin/flink cancel --target kubernetes-application -Dkubernetes.cluster-id=flink-cluster <jobId>  
 ```
 _You can override configurations set in conf/flink-conf.yaml by passing key-value pairs -Dkey=value to bin/flink_
+
+
 
 ## Viewing metrics in Grafana
 

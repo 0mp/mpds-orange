@@ -1,6 +1,6 @@
 app:
   image:
-    repo: eu.gcr.io/mpds-297011/covid-simulator:0.0.1-SNAPSHOT
+    repo: eu.gcr.io/mpds-task-2/covid-simulator:2.0.0-SNAPSHOT-5
     imagePullPolicy: Always
   loggingLevel: INFO
   port: 8080

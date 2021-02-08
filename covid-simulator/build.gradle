@@ -21,7 +21,7 @@ repositories {
 
 jib {
     to {
-        image = "eu.gcr.io/mpds-297011/covid-simulator:$version"
+        image = "eu.gcr.io/mpds-task-2/covid-simulator:$version"
     }
     container {
         environment= [SPRING_PROFILES_ACTIVE:'qa']

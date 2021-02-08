@@ -1,9 +1,11 @@
 package de.tu_berlin.mpds.covid_notifier.engine;
 
 
-import de.tu_berlin.mpds.covid_notifier.model.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.flink.api.common.functions.FlatMapFunction;
+import de.tu_berlin.mpds.covid_notifier.model.DomainEvent;
+import de.tu_berlin.mpds.covid_notifier.model.DomainEventSchema;
+import de.tu_berlin.mpds.covid_notifier.model.InfectionReported;
+import de.tu_berlin.mpds.covid_notifier.model.PersonContact;
 import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
@@ -23,7 +25,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 
-import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -74,7 +75,7 @@ public class FlinkEngine {
      */
     @Bean
     public Properties Properties() {
-        properties.setProperty("bootstrap.servers", "localhost:9092");
+        properties.setProperty("bootstrap.servers", "kafka.default.svc.cluster.local:9092");
         properties.setProperty("group.id", "covidAnalyser");
         return properties;
     }
@@ -97,7 +98,7 @@ public class FlinkEngine {
 
         /**
          * Infection Mapper
-         * @param  data 
+         * @param  data
          * @return String
          *
          * Request contacts from Redis of set of contacts for personId from param
