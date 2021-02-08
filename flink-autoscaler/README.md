@@ -49,7 +49,7 @@ docker-compose down
 ```
 gcloud auth configure-docker
 ```
-* Run the following command on the home directory o`f the simulator project to build and push the Docker image on Mac/Linux:
+* Run the following command on the home directory of the simulator project to build and push the Docker image on Mac/Linux:
 ```
 ./gradlew clean jib
 ```
