@@ -54,6 +54,8 @@ public class FlinkEngine {
 
     private long checkpointInterval;
 
+    private Boolean defaultStateBackend;
+
     final OutputTag<InfectionReported> outputTag = new OutputTag<InfectionReported>("InfectionReported") {
     };
 
@@ -81,6 +83,11 @@ public class FlinkEngine {
             this.checkpointInterval = Long.parseLong(params.get("checkpoint.interval"));
         }
 
+        if (params.has("statebackend.default")) {
+            LOG.info("Default state backend: " + params.get("statebackend.default"));
+            this.defaultStateBackend = Boolean.valueOf(params.get("statebackend.default"));
+        }
+
         env = StreamExecutionEnvironment.getExecutionEnvironment();
         // make parameters available in the web interface
         env.getConfig().setGlobalJobParameters(params);
@@ -95,7 +102,12 @@ public class FlinkEngine {
                 Time.of(5, TimeUnit.MINUTES), //time interval for measuring failure rate
                 Time.of(10, TimeUnit.SECONDS) // delay
         ));
-        env.setStateBackend(new FsStateBackend(this.checkpointPath, true));
+
+        if(!this.defaultStateBackend) {
+            LOG.info("Setting FsStateBackend...");
+            env.setStateBackend(new FsStateBackend(this.checkpointPath, true));
+        }
+
         return env;
     }
 

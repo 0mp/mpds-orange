@@ -165,6 +165,24 @@ Deploy the Flink cluster using the cli from the downloaded Flink package
     local:///opt/flink/usrlib/covid-engine-2.3.0.jar \
     --checkpoint hdfs://35.246.133.58:8051/flink/checkpoints \
     --checkpoint.interval 300000
+    
+./bin/flink run-application \
+    --target kubernetes-application \
+    -Dkubernetes.cluster-id=flink-cluster \
+    -Dkubernetes.container.image=eu.gcr.io/mpds-task-2/covid-engine:2.3.1 \
+    -Dkubernetes.container.image.pull-policy=Always \
+    -Dkubernetes.jobmanager.annotations=prometheus.io/scrape:'true',prometheus.io/port:'9999' \
+    -Dkubernetes.taskmanager.annotations=prometheus.io/scrape:'true',prometheus.io/port:'9999' \
+    -Dmetrics.latency.granularity=OPERATOR \
+    -Dmetrics.latency.interval=1000 \
+    -Dmetrics.reporters=prom \
+    -Dmetrics.reporter.prom.class=org.apache.flink.metrics.prometheus.PrometheusReporter \
+    -Dmetrics.reporter.prom.port=9999 \
+    -Dmetrics.reporter.jmx.class=org.apache.flink.metrics.jmx.JMXReporter \
+    -Dmetrics.reporter.jmx.port=8789 \
+    local:///opt/flink/usrlib/covid-engine-2.3.1.jar \
+    --statebackend.default true \
+    --checkpoint.interval 300000
 ```
 
 Once the application cluster is deployed you can interact with it:
@@ -223,3 +241,7 @@ To delete all resources created by Terraform, run:
 * Sometimes the Terraform commands don't work immediately. In that case, repeat the Terraform commands (see above)
 * Update the latest GKE stable version if errors are thrown related to that on the Terraform main.tf file
 * Enable the APIs manually through the GCP console if required
+* Get cluster credentials without Terraform if required
+```
+  gcloud container clusters get-credentials mpds-task-2-cluster --zone europe-west3-a
+```
