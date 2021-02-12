@@ -57,6 +57,7 @@ variable "project_services" {
   type = list
 
   default = [
+    "iam.googleapis.com",
     "cloudresourcemanager.googleapis.com",
     "container.googleapis.com",
     "compute.googleapis.com",
