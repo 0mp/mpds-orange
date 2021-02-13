@@ -860,6 +860,7 @@ metrics:
     whitelistObjectNames:
       - kafka.controller:*
       - kafka.server:*
+      - kafka.consumer:*
       - java.lang:*
       - kafka.network:*
       - kafka.log:*
