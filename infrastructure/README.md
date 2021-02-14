@@ -174,8 +174,42 @@ $ kubectl create serviceaccount flink-service-account
 $ kubectl create clusterrolebinding flink-role-binding-flink --clusterrole=edit --serviceaccount=default:flink-service-account
 ```
 
-Deploy the Flink cluster using the cli from the downloaded Flink package
+#### Deploy the Flink cluster using the cli from the downloaded Flink package
+A Flink native Kubernetes cluster in session mode could be deployed like this:
+```
+./bin/kubernetes-session.sh \
+    -Dkubernetes.cluster-id=flink-cluster \
+    -Dkubernetes.container.image=eu.gcr.io/mpds-task-2/covid-engine:2.3.1 \
+    -Dkubernetes.container.image.pull-policy=Always \
+    -Dexecution.attached=true \
+    -Dkubernetes.jobmanager.annotations=prometheus.io/scrape:'true',prometheus.io/port:'9999' \
+    -Dkubernetes.taskmanager.annotations=prometheus.io/scrape:'true',prometheus.io/port:'9999' \
+    -Dmetrics.latency.granularity=OPERATOR \
+    -Dmetrics.latency.interval=1000 \
+    -Dmetrics.reporters=prom \
+    -Dmetrics.reporter.prom.class=org.apache.flink.metrics.prometheus.PrometheusReporter \
+    -Dmetrics.reporter.prom.port=9999 \
+    -Dmetrics.reporter.jmx.class=org.apache.flink.metrics.jmx.JMXReporter \
+    -Dmetrics.reporter.jmx.port=8789 \
+    -Dstate.savepoints.dir=hdfs://hadoop-hdfs-namenode:8020/flink/savepoints
+```
 
+Get the Flink Web UI URL:
+  ```
+  export NODE_PORT=$(kubectl get --namespace default -o jsonpath="{.spec.ports[0].nodePort}" services flink-cluster-rest)
+  export NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="ExternalIP")].address}')
+  echo http://$NODE_IP:$NODE_PORT
+  ````
+
+Submit the Flink job and start the application, e.g.:
+```
+ Program Arguments: --statebackend.default false --checkpoint hdfs://hadoop-hdfs-namenode:8020/flink/checkpoints --checkpoint.interval 300000
+ Parallelism: 1
+ Savepoint Path: hdfs://hadoop-hdfs-namenode:8020/flink/savepoints/savepoint-040a83-73e0bac50483
+```
+
+
+Alternatively, Flink could be deployed in application mode
 ```        
 ./bin/flink run-application \
     --target kubernetes-application \
@@ -198,9 +232,10 @@ Deploy the Flink cluster using the cli from the downloaded Flink package
     --checkpoint.interval 300000    
     
     
-    // Start a Flink cluster from a specific checkpoint
+    // Start a Flink cluster from a specific savepoint
     ./bin/flink run-application \
     --target kubernetes-application \
+    --parallelism 3 \
     --fromSavepoint hdfs://hadoop-hdfs-namenode:8020/flink/savepoints/savepoint-f856bd-8b076fb00f92/_metadata\
     -Dkubernetes.cluster-id=flink-cluster \
     -Dkubernetes.container.image=eu.gcr.io/mpds-task-2/covid-engine:2.3.1 \
@@ -218,20 +253,8 @@ Deploy the Flink cluster using the cli from the downloaded Flink package
     local:///opt/flink/usrlib/covid-engine-2.3.1.jar \
     --statebackend.default false \
     --checkpoint hdfs://hadoop-hdfs-namenode:8020/flink/checkpoints \
-    --checkpoint.interval 300000   
-    
-    // Stops the Flink cluster
-    ./bin/flink stop \
-    --target kubernetes-application \
-    -Dkubernetes.cluster-id=flink-cluster 7f41ed2c0a863ea5ddfa2c315416fceb
+    --checkpoint.interval 300000
 ```
-A Flink native Kubernetes cluster in session mode could be deployed like this:
-```
-./bin/kubernetes-session.sh \
-    -Dkubernetes.cluster-id=flink-cluster \
-    -Dexecution.attached=true
-```
-
 Once the application cluster is deployed you can interact with it:
 ```
 # List running job on the cluster
@@ -241,6 +264,12 @@ $ ./bin/flink cancel --target kubernetes-application -Dkubernetes.cluster-id=fli
 ```
 _You can override configurations set in conf/flink-conf.yaml by passing key-value pairs -Dkey=value to bin/flink_
 
+Stops the Flink cluster if is not needed anymore, e.g.:
+```
+./bin/flink stop \
+--target kubernetes-application \
+-Dkubernetes.cluster-id=flink-cluster 7f41ed2c0a863ea5ddfa2c315416fceb
+```
 
 ## Viewing metrics in Grafana
 

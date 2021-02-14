@@ -1,0 +1,184 @@
+{
+	"info": {
+		"_postman_id": "8d5e0884-aa45-4579-b208-e0e0ffcd68a8",
+		"name": "Apache Flink",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "/jobs/:jobid/rescaling",
+			"request": {
+				"method": "PATCH",
+				"header": [],
+				"url": {
+					"raw": "http://35.242.216.143:8081/jobs/040a83a68671b6d3d0f4c11a10317c98?parallelism=3",
+					"protocol": "http",
+					"host": [
+						"35",
+						"242",
+						"216",
+						"143"
+					],
+					"port": "8081",
+					"path": [
+						"jobs",
+						"040a83a68671b6d3d0f4c11a10317c98"
+					],
+					"query": [
+						{
+							"key": "parallelism",
+							"value": "3"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "create savepoint",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"target-directory\": \"hdfs://hadoop-hdfs-namenode:8020/flink/savepoints\",\n    \"cancel-job\": false\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://35.246.184.68:8081/jobs/20795546bd88a4ccd74dfeca4075b1e3/savepoints",
+					"protocol": "http",
+					"host": [
+						"35",
+						"246",
+						"184",
+						"68"
+					],
+					"port": "8081",
+					"path": [
+						"jobs",
+						"20795546bd88a4ccd74dfeca4075b1e3",
+						"savepoints"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "/jobs/:jobid/savepoints/:triggerid",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://35.242.216.143:8081/jobs/040a83a68671b6d3d0f4c11a10317c98/savepoints/a50a0a28ba451cc85dde1588ad279c8a",
+					"protocol": "http",
+					"host": [
+						"35",
+						"242",
+						"216",
+						"143"
+					],
+					"port": "8081",
+					"path": [
+						"jobs",
+						"040a83a68671b6d3d0f4c11a10317c98",
+						"savepoints",
+						"a50a0a28ba451cc85dde1588ad279c8a"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "/jobs/:jobid/stop",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"targetDirectory\": \"hdfs://hadoop-hdfs-namenode:8020/flink/savepoints\",\n    \"drain\": true\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://35.242.216.143:8081/jobs/040a83a68671b6d3d0f4c11a10317c98/stop",
+					"protocol": "http",
+					"host": [
+						"35",
+						"242",
+						"216",
+						"143"
+					],
+					"port": "8081",
+					"path": [
+						"jobs",
+						"040a83a68671b6d3d0f4c11a10317c98",
+						"stop"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "/jars",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://35.242.216.143:8081/jars",
+					"protocol": "http",
+					"host": [
+						"35",
+						"242",
+						"216",
+						"143"
+					],
+					"port": "8081",
+					"path": [
+						"jars"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "/jars/:jarid/run",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"jobId\": \"040a83a68671b6d3d0f4c11a10317c98\",\n    \"programArgs\": \"--statebackend.default false --checkpoint hdfs://hadoop-hdfs-namenode:8020/flink/checkpoints --checkpoint.interval 300000\",\n    \"parallelism\": 1,\n    \"savepointPath\": \"hdfs://hadoop-hdfs-namenode:8020/flink/savepoints/savepoint-040a83-73e0bac50483\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://35.242.216.143:8081/jars/5a43f0f9-3b2f-4d81-a0b0-fbafe243891e_covid-engine-2.3.1.jar/run",
+					"protocol": "http",
+					"host": [
+						"35",
+						"242",
+						"216",
+						"143"
+					],
+					"port": "8081",
+					"path": [
+						"jars",
+						"5a43f0f9-3b2f-4d81-a0b0-fbafe243891e_covid-engine-2.3.1.jar",
+						"run"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
