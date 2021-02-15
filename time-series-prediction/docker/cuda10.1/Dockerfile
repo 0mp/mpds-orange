@@ -33,4 +33,8 @@ RUN mkdir /mount
 RUN chmod 777 /mount
 WORKDIR /mount
 
+RUN mkdir /external
+RUN cd /external && git clone https://github.com/HazyResearch/hippo-code.git
+ENV PYTHONPATH "${PYTHONPATH}:/external/hippo-code"
+
 CMD ["jupyter", "notebook", "--allow-root", "--notebook-dir=/mount", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--NotebookApp.token=timeseries"]
