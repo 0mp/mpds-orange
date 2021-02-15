@@ -857,12 +857,7 @@ metrics:
     ## (warning its crazy excessive and they aren't formatted in a prometheus style) (1) `whitelistObjectNames: []`
     ## (2) commented out above `overrideConfig`.
     ##
-    whitelistObjectNames:
-      - kafka.controller:*
-      - kafka.server:*
-      - java.lang:*
-      - kafka.network:*
-      - kafka.log:*
+    whitelistObjectNames: []
 
     ## Prometheus JMX exporter configuration
     ## Specify content for jmx-kafka-prometheus.yml. Evaluated as a template

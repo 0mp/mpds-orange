@@ -9,4 +9,5 @@ public class CovidNotifierApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(CovidNotifierApplication.class, args);
 	}
+
 }

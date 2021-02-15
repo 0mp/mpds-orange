@@ -57,6 +57,7 @@ variable "project_services" {
   type = list
 
   default = [
+    "iam.googleapis.com",
     "cloudresourcemanager.googleapis.com",
     "container.googleapis.com",
     "compute.googleapis.com",
@@ -132,6 +133,10 @@ resource "google_container_node_pool" "primary_nodes" {
   cluster    = google_container_cluster.dev-cluster.name
   node_count = var.gke_num_nodes
 
+//  autoscaling {
+//    max_node_count = 6
+//    min_node_count = 0
+//  }
   node_config {
     oauth_scopes = [
       "https://www.googleapis.com/auth/logging.write",
