@@ -2,7 +2,45 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from model.orthogonalcell import OrthogonalCell
+from model.model import Model as HiPPOModel
+from model.rnn import RNN
 
+
+class HiPPO(nn.Module):
+    
+    def __init__(self, hidden_dim, input_dim, future):
+        
+        super().__init__()
+        self.hidden_dim = hidden_dim
+        self.input_dim = input_dim
+        
+        self.ortho_rnn = RNN(OrthogonalCell(input_dim, hidden_dim))
+        self.hidden2out = nn.Linear(hidden_dim, future)
+        
+    def forward(self, ts):
+        _, ortho_out = self.ortho_rnn(ts.permute(2,0,1))
+        #print(ortho_out.size())
+        prediction = self.hidden2out(ortho_out)
+        return prediction
+
+"""
+class HiPPO(nn.Module):
+    
+    def __init__(self, hidden_dim, input_dim, future, output_dim=1):
+        
+        super().__init__()
+        self.hidden_dim = hidden_dim
+        self.input_dim = input_dim
+        
+        self.hippo = HiPPOModel(input_dim, output_dim, future, cell='orthogonal', cell_args={'hidden_size':hidden_dim})
+        
+    def forward(self, ts):
+        hippo_out = self.hippo(ts.permute(0,2,1))
+        print(ts.size())
+        hippo_out = hippo_out.view(-1, self.hidden_dim)
+        return hippo_out
+"""
 
 class LSTM(nn.Module):
     
@@ -46,7 +84,7 @@ class CNN1D_1l_RNN(nn.Module):
         super().__init__()
         self.conv1 = nn.Conv1d(input_dim, ch_out, k_size, stride)
         if cell_type == "GRU": 
-            self.recurr_cell = GRU(hidden_dim, int((ts_len - k_size)/stride + 1), ch_out, future, stacked, dropout=0.2)
+            self.recurr_cell = GRU(hidden_dim, int((ts_len - k_size)/stride + 1), ch_out, future, stacked)
         else:
             self.recurr_cell = LSTM(hidden_dim, int((ts_len - k_size)/stride + 1), ch_out, future, stacked)
         
@@ -83,4 +121,3 @@ class CNN1D_2l_RNN(nn.Module):
     
 
     
-        

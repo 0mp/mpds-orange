@@ -19,6 +19,7 @@ def train_lambda(model, lambda_func, future = 1, time_range = 24, tick_size = 0.
     with tqdm(range(epochs)) as pbar:
         
         for _ in pbar:
+            optimizer.zero_grad()
             starts = np.random.random_integers(0, max_t, batch_size)
 
             ticks = np.empty((batch_size, int(time_range / tick_size)))
@@ -30,6 +31,7 @@ def train_lambda(model, lambda_func, future = 1, time_range = 24, tick_size = 0.
                 future_ticks[i, :] = starts[i] + time_range + np.arange(future) * tick_size
 
             x = torch.from_numpy(lambda_func(ticks)[:,None,:]).to(dev)
+            #x = torch.from_numpy(lambda_func(ticks)[:,:,None]).to(dev)
             y = torch.from_numpy(lambda_func(future_ticks)).to(dev)
             
             y_hat = model(x)
@@ -41,7 +43,7 @@ def train_lambda(model, lambda_func, future = 1, time_range = 24, tick_size = 0.
             loss.backward()
             optimizer.step()
         
-    eval_lambda(model, lambda_func, time_range, tick_size, dev)
+    eval_lambda(model, lambda_func, time_range, tick_size, dev=dev)
             
 def eval_lambda(model, lambda_func, time_range = 24, tick_size = 0.1, eval_from = 100, dev = torch.device("cuda")):
     
@@ -65,6 +67,7 @@ def forward_walk_train(model, time_series, optimizer, criterion, seq_len=32, fut
     iters = time_series.size(2) - (seq_len + future) + 1
     #print(iters)
     for i in range(iters):
+        optimizer.zero_grad()
         loss = criterion(model(time_series[:,:,i:(seq_len+i)]), time_series[:,0,(seq_len+i):(seq_len+i+future)])
         loss_sum += loss.item()
         loss.backward()

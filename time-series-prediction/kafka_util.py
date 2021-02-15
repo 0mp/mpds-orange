@@ -1,7 +1,7 @@
 from kafka import KafkaConsumer
 from kafka import KafkaProducer
 import json, time
-from datetime import datetime
+import datetime
 
 
 def get_msg(topic, ip, interval = 100):
@@ -22,13 +22,13 @@ def get_producer(topic, ip, batch_size=1):
                              batch_size = 0
                             )
         
-def sim_traffic(func, ip, topic="statistics", interval = 300, amount = 1000):
+def sim_traffic(func, ip, topic="statistics", interval = 200, amount = 1000):
     
     producer = get_producer(topic, ip)
     
     for x in range(1, 1000):
         
-        record = {"timestamp" : datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        record = {"timestamp" : datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).isoformat(),
                   "load" : func(x)
                  }
         
