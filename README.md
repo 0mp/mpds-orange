@@ -11,20 +11,7 @@ There are 2 Kafka topics used by the autoscaling system:
 
 #### Metrics
 
-The following metrics are of interest to the Autoscaler:
-
-- Average message latency
-  - POST
-  - Endpoint: `/api/v1/query`
-  - Fields:
-    - `query`: `avg(avg by (operator_id) (flink_taskmanager_job_latency_source_id_operator_id_operator_subtask_index_latency{quantile=\"0.95\"}))`
-    - `time`: e.g., `2021-02-08T10:10:51.781Z
-- Average Kafka message ingest count per second
-  - POST
-  - Endpoint: `/api/v1/query`
-  - Fields:
-    - `query`: `avg(kafka_server_brokertopicmetrics_total_messagesinpersec_count)`
-    - `time`: e.g., `2021-02-08T10:10:51.781Z
+See the [Prometheus Postman collection](./Prometheus.postman_collection.json).
 
 <details>
   <summary>Example of a Prometheus API request and response:</summary>

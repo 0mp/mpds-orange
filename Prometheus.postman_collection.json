@@ -1,0 +1,79 @@
+{
+	"info": {
+		"_postman_id": "4a64ce75-a4af-42fc-b922-25dae6d494ba",
+		"name": "Prometheus",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Average message latency",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://34.107.94.158:30090/api/v1/query?query=avg(avg by (operator_id) (flink_taskmanager_job_latency_source_id_operator_id_operator_subtask_index_latency{quantile=\"0.95\"}))&time=2021-02-15T10:10:51.781Z",
+					"protocol": "http",
+					"host": [
+						"34",
+						"107",
+						"94",
+						"158"
+					],
+					"port": "30090",
+					"path": [
+						"api",
+						"v1",
+						"query"
+					],
+					"query": [
+						{
+							"key": "query",
+							"value": "avg(avg by (operator_id) (flink_taskmanager_job_latency_source_id_operator_id_operator_subtask_index_latency{quantile=\"0.95\"}))"
+						},
+						{
+							"key": "time",
+							"value": "2021-02-15T10:10:51.781Z"
+						}
+					]
+				},
+				"description": "Get all metrics with a single query."
+			},
+			"response": []
+		},
+		{
+			"name": "Average Kafka message ingest count per second",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://34.107.94.158:30090/api/v1/query?query=avg(kafka_server_brokertopicmetrics_total_messagesinpersec_count)&time=2021-02-15T10:10:51.781Z",
+					"protocol": "http",
+					"host": [
+						"34",
+						"107",
+						"94",
+						"158"
+					],
+					"port": "30090",
+					"path": [
+						"api",
+						"v1",
+						"query"
+					],
+					"query": [
+						{
+							"key": "query",
+							"value": "avg(kafka_server_brokertopicmetrics_total_messagesinpersec_count)"
+						},
+						{
+							"key": "time",
+							"value": "2021-02-15T10:10:51.781Z"
+						}
+					]
+				},
+				"description": "Get all metrics with a single query."
+			},
+			"response": []
+		}
+	]
+}
