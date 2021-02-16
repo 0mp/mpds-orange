@@ -11,19 +11,9 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://34.107.94.158:30090/api/v1/query?query=avg(avg by (operator_id) (flink_taskmanager_job_latency_source_id_operator_id_operator_subtask_index_latency{quantile=\"0.95\"}))&time=2021-02-16T17:10:51.781Z",
-					"protocol": "http",
+					"raw": "{{prometheus_address}}{{endpoint_query}}?query=avg(avg by (operator_id) (flink_taskmanager_job_latency_source_id_operator_id_operator_subtask_index_latency{quantile=\"0.95\"}))&time={{timestamp_example}}",
 					"host": [
-						"34",
-						"107",
-						"94",
-						"158"
-					],
-					"port": "30090",
-					"path": [
-						"api",
-						"v1",
-						"query"
+						"{{prometheus_address}}{{endpoint_query}}"
 					],
 					"query": [
 						{
@@ -32,7 +22,7 @@
 						},
 						{
 							"key": "time",
-							"value": "2021-02-16T17:10:51.781Z"
+							"value": "{{timestamp_example}}"
 						}
 					]
 				},
@@ -46,19 +36,9 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://34.107.94.158:30090/api/v1/query?query=sum by (topic) (rate(kafka_server_brokertopicmetrics_messagesinpersec_count[2m]))&time=2021-02-16T17:10:51.781Z",
-					"protocol": "http",
+					"raw": "{{prometheus_address}}{{endpoint_query}}?query=sum by (topic) (rate(kafka_server_brokertopicmetrics_messagesinpersec_count[2m]))&time={{timestamp_example}}",
 					"host": [
-						"34",
-						"107",
-						"94",
-						"158"
-					],
-					"port": "30090",
-					"path": [
-						"api",
-						"v1",
-						"query"
+						"{{prometheus_address}}{{endpoint_query}}"
 					],
 					"query": [
 						{
@@ -67,12 +47,70 @@
 						},
 						{
 							"key": "time",
-							"value": "2021-02-16T17:10:51.781Z"
+							"value": "{{timestamp_example}}"
 						}
 					]
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "Kafka lag",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{prometheus_address}}{{endpoint_query_range}}?query=sum(flink_taskmanager_job_task_operator_KafkaConsumer_records_lag_max) / count(flink_taskmanager_job_task_operator_KafkaConsumer_records_lag_max)&start={{timestamp_example}}&end={{timestamp+5s_example}}&step=1s",
+					"host": [
+						"{{prometheus_address}}{{endpoint_query_range}}"
+					],
+					"query": [
+						{
+							"key": "query",
+							"value": "sum(flink_taskmanager_job_task_operator_KafkaConsumer_records_lag_max) / count(flink_taskmanager_job_task_operator_KafkaConsumer_records_lag_max)"
+						},
+						{
+							"key": "start",
+							"value": "{{timestamp_example}}"
+						},
+						{
+							"key": "end",
+							"value": "{{timestamp+5s_example}}"
+						},
+						{
+							"key": "step",
+							"value": "1s"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "prometheus_address",
+			"value": "http://34.107.94.158:30090"
+		},
+		{
+			"key": "endpoint_query",
+			"value": "/api/v1/query"
+		},
+		{
+			"key": "timestamp_example",
+			"value": "2021-02-16T17:10:51.781Z"
+		},
+		{
+			"key": "endpoint_query_range",
+			"value": "/api/v1/query_range"
+		},
+		{
+			"key": "job_name",
+			"value": "JOB_NAME"
+		},
+		{
+			"key": "timestamp+5s_example",
+			"value": "2021-02-16T17:10:56.781Z"
 		}
 	]
 }
