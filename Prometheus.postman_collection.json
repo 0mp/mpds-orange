@@ -41,12 +41,12 @@
 			"response": []
 		},
 		{
-			"name": "Average Kafka message ingest count per second",
+			"name": "Per-second average rate of increase of Kafka message ingest per topic",
 			"request": {
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://34.107.94.158:30090/api/v1/query?query=avg(kafka_server_brokertopicmetrics_total_messagesinpersec_count)&time=2021-02-15T10:10:51.781Z",
+					"raw": "http://34.107.94.158:30090/api/v1/query?query=sum by (topic) (rate(kafka_server_brokertopicmetrics_messagesinpersec_count[2m]))&time=2021-02-16T17:10:51.781Z",
 					"protocol": "http",
 					"host": [
 						"34",
@@ -63,15 +63,14 @@
 					"query": [
 						{
 							"key": "query",
-							"value": "avg(kafka_server_brokertopicmetrics_total_messagesinpersec_count)"
+							"value": "sum by (topic) (rate(kafka_server_brokertopicmetrics_messagesinpersec_count[2m]))"
 						},
 						{
 							"key": "time",
-							"value": "2021-02-15T10:10:51.781Z"
+							"value": "2021-02-16T17:10:51.781Z"
 						}
 					]
-				},
-				"description": "Get all metrics with a single query."
+				}
 			},
 			"response": []
 		}
