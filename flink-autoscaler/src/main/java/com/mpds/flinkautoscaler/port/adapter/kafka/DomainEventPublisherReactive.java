@@ -1,12 +1,13 @@
 package com.mpds.flinkautoscaler.port.adapter.kafka;
 
-import com.fasterxml.jackson.databind.ser.std.StringSerializer;
+
 import com.mpds.flinkautoscaler.domain.model.events.DomainEvent;
 import com.mpds.flinkautoscaler.infrastructure.config.KafkaProducerProps;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import reactor.kafka.sender.KafkaSender;

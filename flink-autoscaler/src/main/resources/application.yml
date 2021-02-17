@@ -31,3 +31,8 @@ kafka:
   topic: metric
   client-id-config: flink-autoscaler
   acks-config: all
+metrics-server:
+  prometheus:
+    base-url: http://34.107.94.158:30090
+    query-path: /api/v1/query
+
