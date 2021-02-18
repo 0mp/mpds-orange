@@ -20,7 +20,8 @@ import java.util.UUID;
         defaultImpl = MetricReported.class
 )
 @JsonSubTypes({
-        @JsonSubTypes.Type( value = MetricReported.class, name = "MetricReported" )
+        @JsonSubTypes.Type( value = MetricReported.class, name = "MetricReported" ),
+        @JsonSubTypes.Type( value = MetricReported.class, name = "PredictionReported" )
 })
 @RequiredArgsConstructor
 public abstract class DomainEvent {
