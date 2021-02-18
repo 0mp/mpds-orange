@@ -36,3 +36,17 @@ metrics-server:
     base-url: http://34.107.94.158:30090
     query-path: /api/v1/query
 
+spring:
+  cloud:
+    stream:
+      function:
+        bindings:
+          prediction-in-0: input
+      kafka:
+        binder:
+          brokers: localhost
+      bindings:
+        input:
+          destination: prediction
+          group: flink-autoscaler
+          content-type: application/json

@@ -37,10 +37,10 @@ public class MetricReported extends DomainEvent {
     private final float memoryUsage;
 
     @JsonCreator
-    public MetricReported(@JsonProperty("sequenceNumber") Long sequenceNumber, @JsonProperty("kafkaMessagesInPerSeconds") float kafkaMessagesPerSeconds, @JsonProperty("occurredOn") LocalDateTime occurredOn, @JsonProperty("kafkaTopic") String kafkaTopic, @JsonProperty("flinkTopic") String flinkTopic,
+    public MetricReported(@JsonProperty("kafkaMessagesInPerSeconds") float kafkaMessagesPerSeconds, @JsonProperty("occurredOn") LocalDateTime occurredOn, @JsonProperty("kafkaTopic") String kafkaTopic, @JsonProperty("flinkTopic") String flinkTopic,
                           @JsonProperty("kafkaMaxMessageLatency") int kafkaMaxMessageLatency, @JsonProperty("recordsProcessedPerSeconds") int recordsProcessedPerSeconds,  @JsonProperty("networkInPerSeconds") float networkInPerSeconds, @JsonProperty("networkOutPerSeconds") float networkOutPerSeconds,
                           @JsonProperty("sinkHealthy") Boolean sinkHealthy, @JsonProperty("cpuUtilization") float cpuUtilization, @JsonProperty("memoryUsage") float memoryUsage) {
-        super(UUID.randomUUID(), sequenceNumber, occurredOn);
+        super(UUID.randomUUID(), occurredOn);
         this.kafkaTopic = kafkaTopic;
         this.flinkTopic = flinkTopic;
         this.kafkaMessagesPerSeconds = kafkaMessagesPerSeconds;

@@ -27,7 +27,7 @@ public abstract class DomainEvent {
 
     private final UUID uuid;
 
-    private final Long sequenceNumber;
+//    private final Long sequenceNumber;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
     @JsonSerialize(using = LocalDateTimeSerializer.class)

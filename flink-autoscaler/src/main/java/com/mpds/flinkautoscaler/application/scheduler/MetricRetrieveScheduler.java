@@ -36,9 +36,7 @@ public class MetricRetrieveScheduler {
 
     private final PrometheusMetricMapper prometheusMetricMapper;
 
-    private long sequenceNumber;
-
-    private static final String KAFKA_METRIC_TOPIC ="metric";
+    private static final String KAFKA_METRIC_TOPIC ="covid";
 
     // Every 5 seconds
     @Scheduled(fixedDelay = 5000)
@@ -49,8 +47,6 @@ public class MetricRetrieveScheduler {
 
         String currentDateTimeString = currentDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'"));
 
-
-        // TODO 1: Retrieve metrics via webClient
         this.webClient.post()
                 .uri("http://34.107.94.158:30090/api/v1/query")
 //                .uri(prometheusProps.getQueryPath())
@@ -58,32 +54,23 @@ public class MetricRetrieveScheduler {
                 .retrieve()
                 .bodyToMono(PrometheusMetric.class)
                 .flatMap(prometheusMetric -> {
-//                    System.out.println(prometheusMetric);
                     Data data = prometheusMetric.getData();
-                    System.out.println(data.toString());
 
                     return Flux.fromIterable(data.getResult())
                             .flatMap(result -> {
-                                this.sequenceNumber++;
                                 Object[] resultObject = result.getValue();
                                 int unix_timestamp = (int) resultObject[0];
                                 LocalDateTime onDateTime = LocalDateTime.ofInstant(Instant.ofEpochSecond(unix_timestamp), ZoneOffset.UTC);
                                 log.info("Metric retrieved at: " + onDateTime.toString());
 
-                                Float kafkaMessagesPerSeconds = Float.parseFloat(String.valueOf(resultObject[1]));
+                                float kafkaMessagesPerSeconds = Float.parseFloat(String.valueOf(resultObject[1]));
                                 log.info("Kafka Messages per seconds: " + kafkaMessagesPerSeconds);
 
-                                DomainEvent domainEvent = new MetricReported(this.sequenceNumber, kafkaMessagesPerSeconds, onDateTime, KAFKA_METRIC_TOPIC, "", 0, 0, 0, 0, true, 0.0f, 0.0f);
+                                DomainEvent domainEvent = new MetricReported(kafkaMessagesPerSeconds, onDateTime, KAFKA_METRIC_TOPIC, "", 0, 0, 0, 0, true, 0.0f, 0.0f);
                                 return this.domainEventPublisherReactive.sendMessages(domainEvent);
                             }).then();
-
-
-//                    return Mono.empty();
                 })
                 .subscribe();
-        // TODO 2: Parse metric to DomainEvent (MetricReported)
-
-        // TODO 3: Publish the domain event to Kafkausing the domainEventPublisherReactive instance
     }
 
     private MultiValueMap<String, String> getKafkaMessagesPerSecondsFormData(String dateTime) {
