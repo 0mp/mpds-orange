@@ -84,4 +84,7 @@ helm uninstall flink-autoscaler
 * Kafka for development: https://lenses.io/box/
 * Reactor Kafka Reference Guide: https://projectreactor.io/docs/kafka/release/reference/
 * Kafka Performance Tuning — Ways for Kafka Optimization: https://medium.com/@rinu.gour123/kafka-performance-tuning-ways-for-kafka-optimization-fdee5b19505b
+* Spring Cloud Stream: https://cloud.spring.io/spring-cloud-stream/spring-cloud-stream.html
+* Spring Cloud Stream Programming Model: https://docs.spring.io/spring-cloud-stream/docs/current-snapshot/reference/html/_programming_model.html
+* Spring 5 WebClient: https://www.baeldung.com/spring-5-webclient
     
