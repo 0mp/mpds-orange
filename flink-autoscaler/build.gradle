@@ -41,7 +41,7 @@ dependencies {
     implementation 'org.mapstruct:mapstruct:1.4.2.Final'
     implementation 'org.springframework.cloud:spring-cloud-stream'
     compile group: 'org.springframework.cloud', name: 'spring-cloud-stream-binder-kafka'
-    compile group: 'org.springframework.cloud', name: 'spring-cloud-stream-reactive'
+//    compile group: 'org.springframework.cloud', name: 'spring-cloud-stream-reactive'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.4.2.Final'
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
