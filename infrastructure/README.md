@@ -299,14 +299,16 @@ Manual Resource Cleanup for FLink
 ```
 kubectl delete deployment/flink-cluster
 ```
+
 Uninstall the charts with:
 ```
-  helm uninstall [DEPLOYMENT NAME]
+helm uninstall [DEPLOYMENT NAME]
 ```
+
 To delete all resources created by Terraform, run:
-  ```
-  terraform destroy
-  ```
+```
+terraform destroy
+```
 
 ## Troubleshooting
 * Sometimes the Terraform commands don't work immediately. In that case, repeat the Terraform commands mentioned above (see (see https://stackoverflow.com/questions/62106154/frequent-error-when-deploying-helm-to-gke-with-terraform))
