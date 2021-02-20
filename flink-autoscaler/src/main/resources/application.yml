@@ -28,6 +28,8 @@ r2dbc:
 # Kafka config
 kafka:
   bootstrap-server: localhost:9092
+  st-prediction-topic: st-prediction
+  lt-prediction-topic: lt-prediction
   topic: metric
   client-id-config: flink-autoscaler
   acks-config: all

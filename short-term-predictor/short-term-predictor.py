@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 
 # Globalen Variablen
-LOAD_TOPIC = 'load'
+LOAD_TOPIC = 'metric'
 PREDICTION_TOPIC = 'st_prediction'
 REBUILD_TIME_MIN = 5
 REBUILD_TIME_SEC = REBUILD_TIME_MIN * 60
@@ -40,7 +40,7 @@ def create_predictions():
         if len(OBSERVATION) > 3:
             curr_prediction = linear_regression[0] * (len(OBSERVATION)) + \
                                 linear_regression[1]
-            if np.square(curr_prediction - message.value['load']) > 8 * MSE:
+            if np.square(curr_prediction - message.value['kafkaMessagesPerSeconds']) > 8 * MSE:
                 spike_data.append(message.value)
                 if len(spike_data) > 3:
                     logging.warning('Spike Detected')
@@ -61,13 +61,13 @@ def create_predictions():
 
 
         # Truncate Observations based on time window
-        curr_time = datetime.strptime(message.value['timestamp'],'%Y-%m-%d %H:%M:%S')
-        while abs((curr_time - datetime.strptime(OBSERVATION[0]['timestamp'],'%Y-%m-%d %H:%M:%S')).seconds) > REGRESSION_WINDOW_SEC :
+        curr_time = datetime.strptime(message.value['occurredOn'],'%Y-%m-%dT%H:%M:%SZ')
+        while abs((curr_time - datetime.strptime(OBSERVATION[0]['occurredOn'],'%Y-%m-%dT%H:%M:%SZ')).seconds) > REGRESSION_WINDOW_SEC :
                 OBSERVATION.pop(0)
 
         
         # Calculate Regression
-        y = np.array([o['load'] for o in OBSERVATION])
+        y = np.array([o['kafkaMessagesPerSeconds'] for o in OBSERVATION])
         x = np.array([*range(len(OBSERVATION))])
         quadratic_regression = np.polyfit(x,y,2)
         linear_regression = np.polyfit(x,y,1)
@@ -88,11 +88,11 @@ def create_predictions():
             prediction = linear_regression[0] * future_x + \
                             linear_regression[1]
 
-        last_ob_time = datetime.strptime(OBSERVATION[-1]['timestamp'],'%Y-%m-%d %H:%M:%S')
+        last_ob_time = datetime.strptime(OBSERVATION[-1]['occurredOn'],'%Y-%m-%dT%H:%M:%SZ')
         nextTime = last_ob_time + timedelta(minutes = REBUILD_TIME_MIN)
         producer.send(PREDICTION_TOPIC,
             {'prediction':prediction,
-            'timestamp': nextTime.strftime('%Y-%m-%d %H:%M:%S')})
+            'occurredOn': nextTime.strftime('%Y-%m-%dT%H:%M:%SZ')})
             
 
 

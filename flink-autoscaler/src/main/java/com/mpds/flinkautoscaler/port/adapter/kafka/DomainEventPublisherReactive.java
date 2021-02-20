@@ -53,7 +53,7 @@ public class DomainEventPublisherReactive {
         return sender.send(Mono.just(SenderRecord.create(producerRecord, domainEvent.getUuid().toString())))
                 .doOnNext(r -> {
                     RecordMetadata metadata = r.recordMetadata();
-                    System.out.printf("Message %s sent successfully, topic-partition=%s-%d offset=%d timestamp=%s\n",
+                    log.info("Message %s sent successfully, topic-partition=%s-%d offset=%d timestamp=%s\n",
                             r.correlationMetadata(),
                             metadata.topic(),
                             metadata.partition(),
@@ -61,6 +61,6 @@ public class DomainEventPublisherReactive {
                             dateFormat.format(new Date(metadata.timestamp())));
                 })
                 .then()
-                .doOnError(e -> log.error("Sending to Kafka failed:"+  e.getMessage()));
+                .doOnError(e -> log.info("Sending to Kafka failed:"+  e.getMessage()));
     }
 }
