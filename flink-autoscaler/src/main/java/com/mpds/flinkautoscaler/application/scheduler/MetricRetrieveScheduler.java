@@ -70,7 +70,6 @@ public class MetricRetrieveScheduler {
             float kafkaLag = Float.parseFloat(tuple.getT2().getData().getResult().get(0).getValue()[1].toString());
             float kafkaLoad = Float.parseFloat(tuple.getT3().getData().getResult().get(0).getValue()[1].toString());
             float mem = Float.parseFloat(tuple.getT4().getData().getResult().get(0).getValue()[1].toString());
-            // TODO: Add kafkaLag.
             DomainEvent domainEvent = new MetricReported(
                     kafkaLoad,
                     currentDateTime,
