@@ -36,7 +36,7 @@ public class RescaleManager {
 
         private final KafkaPredictionConsumerProps kafkaConsumerProps;
 
-        private final KafkaReceiver<String, DomainEvent> reciever;
+        private final KafkaReceiver<String, DomainEvent> receiver;
 
         private final SimpleDateFormat dateFormat;
 
@@ -55,7 +55,7 @@ public class RescaleManager {
             props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, DomainEventSerDes.class);
             ReceiverOptions<String, DomainEvent> receiverOptions = ReceiverOptions.create(props);
 
-            reciever = KafkaReceiver.create(receiverOptions);
+            receiver = KafkaReceiver.create(receiverOptions);
             dateFormat = new SimpleDateFormat("HH:mm:ss:SSS z dd MMM yyyy");
         }
 
