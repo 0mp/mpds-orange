@@ -24,6 +24,8 @@ public class MetricReported extends DomainEvent {
 
     private final int kafkaMaxMessageLatency;
 
+    private final float kafkaLag;
+
     private final int recordsProcessedPerSecond;
 
     private final float networkInPerSecond;
@@ -47,7 +49,8 @@ public class MetricReported extends DomainEvent {
                           @JsonProperty("networkOutPerSecond") float networkOutPerSecond,
                           @JsonProperty("sinkHealthy") Boolean sinkHealthy,
                           @JsonProperty("cpuUtilization") float cpuUtilization,
-                          @JsonProperty("memoryUsage") float memoryUsage) {
+                          @JsonProperty("memoryUsage") float memoryUsage,
+                          @JsonProperty("kafkaLag") float kafkaLag) {
         super(UUID.randomUUID(), occurredOn);
         this.kafkaTopic = kafkaTopic;
         this.flinkTopic = flinkTopic;
@@ -59,6 +62,7 @@ public class MetricReported extends DomainEvent {
         this.sinkHealthy = sinkHealthy;
         this.cpuUtilization = cpuUtilization;
         this.memoryUsage = memoryUsage;
+        this.kafkaLag = kafkaLag;
     }
 
     @Override

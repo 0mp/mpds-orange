@@ -82,7 +82,8 @@ public class MetricRetrieveScheduler {
                     0,
                     true,
                     cpu,
-                    mem);
+                    mem,
+                    kafkaLag);
             log.info(domainEvent.toString());
             this.rescaleManager.evaluate((MetricReported) domainEvent);
             return domainEvent;
