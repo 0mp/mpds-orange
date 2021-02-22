@@ -60,6 +60,7 @@ public class MetricRetrieveScheduler {
         String currentDateTimeString = currentDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'"));
 
         Mono<PrometheusMetric> kafkaLoadMsg = getPrometheusMetric(getKafkaMessagesPerSeconds(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
+        Mono<PrometheusMetric> kafkaLagMsg = getPrometheusMetric(getKafkaLag(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
         Mono<PrometheusMetric> cpuMsg = getPrometheusMetric(getCpuUsage(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
         Mono<PrometheusMetric> memMsg = getPrometheusMetric(getMemUsage(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
 
@@ -68,6 +69,7 @@ public class MetricRetrieveScheduler {
             float kafkaLoad = Float.parseFloat(tuple.getT2().getData().getResult().get(0).getValue()[1].toString());
             float cpu = Float.parseFloat(tuple.getT2().getData().getResult().get(0).getValue()[1].toString());
             float mem = Float.parseFloat(tuple.getT3().getData().getResult().get(0).getValue()[1].toString());
+            // TODO: Add kafkaLag.
             DomainEvent domainEvent = new MetricReported(
                     kafkaLoad,
                     currentDateTime,
@@ -102,6 +104,16 @@ public class MetricRetrieveScheduler {
         log.info("get CPU usage for dateTime: " + dateTime);
         LinkedMultiValueMap<String, String> lmvn = new LinkedMultiValueMap<>();
         final String PROMETHEUS_QUERY = "sum(flink_taskmanager_Status_JVM_CPU_Load) / sum(flink_jobmanager_numRegisteredTaskManagers)";
+        lmvn.add("query", PROMETHEUS_QUERY);
+        lmvn.add("time", dateTime);
+        return lmvn;
+    }
+
+    private MultiValueMap<String, String> getKafkaLag(String dateTime) {
+
+        log.info("get Kafka lag for dateTime: " + dateTime);
+        LinkedMultiValueMap<String, String> lmvn = new LinkedMultiValueMap<>();
+        final String PROMETHEUS_QUERY = "sum(flink_taskmanager_job_task_operator_KafkaConsumer_records_lag_max) / count(flink_taskmanager_job_task_operator_KafkaConsumer_records_lag_max)";
         lmvn.add("query", PROMETHEUS_QUERY);
         lmvn.add("time", dateTime);
         return lmvn;
