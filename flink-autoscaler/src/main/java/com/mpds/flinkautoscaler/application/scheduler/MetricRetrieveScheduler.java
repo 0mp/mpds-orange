@@ -132,7 +132,7 @@ public class MetricRetrieveScheduler {
 
     private MultiValueMap<String, String> getKafkaMessagesPerSecond(String dateTime) {
 
-        log.info("getKafkaMessagesPerSecondFormData for dateTime: " + dateTime);
+        log.info("getKafkaMessagesPerSecond for dateTime: " + dateTime);
         LinkedMultiValueMap<String, String> lmvn = new LinkedMultiValueMap<>();
         final String PROMETHEUS_QUERY = "sum by (covid) (rate(kafka_server_brokertopicmetrics_messagesinpersec_count[2m]))";
         lmvn.add("query", PROMETHEUS_QUERY);
