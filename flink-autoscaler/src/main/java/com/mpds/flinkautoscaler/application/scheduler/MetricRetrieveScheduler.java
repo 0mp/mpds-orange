@@ -65,10 +65,11 @@ public class MetricRetrieveScheduler {
         Mono<PrometheusMetric> memMsg = getPrometheusMetric(getMemUsage(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
 
 
-        return Mono.zip(kafkaLoadMsg,cpuMsg,memMsg).map(tuple -> {
-            float kafkaLoad = Float.parseFloat(tuple.getT2().getData().getResult().get(0).getValue()[1].toString());
-            float cpu = Float.parseFloat(tuple.getT2().getData().getResult().get(0).getValue()[1].toString());
-            float mem = Float.parseFloat(tuple.getT3().getData().getResult().get(0).getValue()[1].toString());
+        return Mono.zip(cpuMsg, kafkaLagMsg, kafkaLoadMsg, memMsg).map(tuple -> {
+            float cpu = Float.parseFloat(tuple.getT1().getData().getResult().get(0).getValue()[1].toString());
+            float kafkaLag = Float.parseFloat(tuple.getT2().getData().getResult().get(0).getValue()[1].toString());
+            float kafkaLoad = Float.parseFloat(tuple.getT3().getData().getResult().get(0).getValue()[1].toString());
+            float mem = Float.parseFloat(tuple.getT4().getData().getResult().get(0).getValue()[1].toString());
             // TODO: Add kafkaLag.
             DomainEvent domainEvent = new MetricReported(
                     kafkaLoad,
