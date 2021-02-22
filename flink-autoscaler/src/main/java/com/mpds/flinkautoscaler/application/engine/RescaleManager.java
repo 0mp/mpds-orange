@@ -64,11 +64,11 @@ public class RescaleManager {
 
 
             log.info("Evaluate");
-            if (metrics.getCpuUtilization() > 0.6 || metrics.getMemoryUsage() > 0.9 || metrics.getKafkaMaxMessageLatency() > 4.0) {
+            if (metrics.getCpuUtilization() > 0.6 || metrics.getMemoryUsage() > 0.9 || metrics.getMaxJobLatency() > 500) {
                 log.info("Scale Up");
                 // Scale Up
             }
-            if (metrics.getCpuUtilization() < 0.4 && metrics.getMemoryUsage() < 0.5 && metrics.getKafkaMaxMessageLatency() < 1.0) {
+            if (metrics.getCpuUtilization() < 0.4 && metrics.getMemoryUsage() < 0.5 && metrics.getMaxJobLatency() < 100) {
                 log.info("Scale Down");
                 // Scale Down
             }

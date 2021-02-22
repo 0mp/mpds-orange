@@ -62,20 +62,22 @@ public class MetricRetrieveScheduler {
         Mono<PrometheusMetric> kafkaLoadMsg = getPrometheusMetric(getKafkaMessagesPerSecond(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
         Mono<PrometheusMetric> kafkaLagMsg = getPrometheusMetric(getKafkaLag(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
         Mono<PrometheusMetric> cpuMsg = getPrometheusMetric(getCpuUsage(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
+        Mono<PrometheusMetric> maxJobLatencyMsg = getPrometheusMetric(getMaxJobLatency(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
         Mono<PrometheusMetric> memMsg = getPrometheusMetric(getMemUsage(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
 
 
-        return Mono.zip(cpuMsg, kafkaLagMsg, kafkaLoadMsg, memMsg).map(tuple -> {
+        return Mono.zip(cpuMsg, kafkaLagMsg, kafkaLoadMsg, maxJobLatencyMsg, memMsg).map(tuple -> {
             float cpu = Float.parseFloat(tuple.getT1().getData().getResult().get(0).getValue()[1].toString());
             float kafkaLag = Float.parseFloat(tuple.getT2().getData().getResult().get(0).getValue()[1].toString());
             float kafkaLoad = Float.parseFloat(tuple.getT3().getData().getResult().get(0).getValue()[1].toString());
-            float mem = Float.parseFloat(tuple.getT4().getData().getResult().get(0).getValue()[1].toString());
+            float maxJobLatency = Float.parseFloat(tuple.getT4().getData().getResult().get(0).getValue()[1].toString());
+            float mem = Float.parseFloat(tuple.getT5().getData().getResult().get(0).getValue()[1].toString());
             DomainEvent domainEvent = new MetricReported(
                     kafkaLoad,
                     currentDateTime,
                     KAFKA_METRIC_TOPIC,
                     "",
-                    0,
+                    maxJobLatency,
                     0,
                     0,
                     0,
@@ -115,6 +117,16 @@ public class MetricRetrieveScheduler {
         log.info("get Kafka lag for dateTime: " + dateTime);
         LinkedMultiValueMap<String, String> lmvn = new LinkedMultiValueMap<>();
         final String PROMETHEUS_QUERY = "sum(flink_taskmanager_job_task_operator_KafkaConsumer_records_lag_max) / count(flink_taskmanager_job_task_operator_KafkaConsumer_records_lag_max)";
+        lmvn.add("query", PROMETHEUS_QUERY);
+        lmvn.add("time", dateTime);
+        return lmvn;
+    }
+
+    private MultiValueMap<String, String> getMaxJobLatency(String dateTime) {
+
+        log.info("get max job latency for dateTime: " + dateTime);
+        LinkedMultiValueMap<String, String> lmvn = new LinkedMultiValueMap<>();
+        final String PROMETHEUS_QUERY = "max(flink_taskmanager_job_latency_source_id_operator_id_operator_subtask_index_latency)";
         lmvn.add("query", PROMETHEUS_QUERY);
         lmvn.add("time", dateTime);
         return lmvn;
