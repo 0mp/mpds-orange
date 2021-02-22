@@ -59,7 +59,7 @@ public class MetricRetrieveScheduler {
         LocalDateTime currentDateTime = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
         String currentDateTimeString = currentDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'"));
 
-        Mono<PrometheusMetric> kafkaLoadMsg = getPrometheusMetric(getKafkaMessagesPerSeconds(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
+        Mono<PrometheusMetric> kafkaLoadMsg = getPrometheusMetric(getKafkaMessagesPerSecond(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
         Mono<PrometheusMetric> kafkaLagMsg = getPrometheusMetric(getKafkaLag(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
         Mono<PrometheusMetric> cpuMsg = getPrometheusMetric(getCpuUsage(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
         Mono<PrometheusMetric> memMsg = getPrometheusMetric(getMemUsage(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
@@ -130,9 +130,9 @@ public class MetricRetrieveScheduler {
         return lmvn;
     }
 
-    private MultiValueMap<String, String> getKafkaMessagesPerSeconds(String dateTime) {
+    private MultiValueMap<String, String> getKafkaMessagesPerSecond(String dateTime) {
 
-        log.info("getKafkaMessagesPerSecondsFormData for dateTime: " + dateTime);
+        log.info("getKafkaMessagesPerSecondFormData for dateTime: " + dateTime);
         LinkedMultiValueMap<String, String> lmvn = new LinkedMultiValueMap<>();
         final String PROMETHEUS_QUERY = "sum by (covid) (rate(kafka_server_brokertopicmetrics_messagesinpersec_count[2m]))";
         lmvn.add("query", PROMETHEUS_QUERY);

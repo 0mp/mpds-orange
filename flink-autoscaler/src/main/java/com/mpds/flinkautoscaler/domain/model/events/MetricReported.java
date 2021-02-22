@@ -12,7 +12,7 @@ import java.util.UUID;
 
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
-@JsonPropertyOrder({"uuid", "eventType", "occurredOn", "kafkaTopic", "kafkaMessagesPerSeconds", "kafkaMaxMessageLatency", "recordsProcessedPerSeconds", "networkInPerSeconds", "networkOutPerSeconds", "sinkHealthy", "cpuUtilization", "memoryUsage"})
+@JsonPropertyOrder({"uuid", "eventType", "occurredOn", "kafkaTopic", "kafkaMessagesPerSecond", "kafkaMaxMessageLatency", "recordsProcessedPerSecond", "networkInPerSecond", "networkOutPerSecond", "sinkHealthy", "cpuUtilization", "memoryUsage"})
 @Getter
 public class MetricReported extends DomainEvent {
 
@@ -20,15 +20,15 @@ public class MetricReported extends DomainEvent {
 
     private final String flinkTopic;
 
-    private final float kafkaMessagesPerSeconds;
+    private final float kafkaMessagesPerSecond;
 
     private final int kafkaMaxMessageLatency;
 
-    private final int recordsProcessedPerSeconds;
+    private final int recordsProcessedPerSecond;
 
-    private final float networkInPerSeconds;
+    private final float networkInPerSecond;
 
-    private final float networkOutPerSeconds;
+    private final float networkOutPerSecond;
 
     private final Boolean sinkHealthy;
 
@@ -37,17 +37,17 @@ public class MetricReported extends DomainEvent {
     private final float memoryUsage;
 
     @JsonCreator
-    public MetricReported(@JsonProperty("kafkaMessagesInPerSeconds") float kafkaMessagesPerSeconds, @JsonProperty("occurredOn") LocalDateTime occurredOn, @JsonProperty("kafkaTopic") String kafkaTopic, @JsonProperty("flinkTopic") String flinkTopic,
-                          @JsonProperty("kafkaMaxMessageLatency") int kafkaMaxMessageLatency, @JsonProperty("recordsProcessedPerSeconds") int recordsProcessedPerSeconds,  @JsonProperty("networkInPerSeconds") float networkInPerSeconds, @JsonProperty("networkOutPerSeconds") float networkOutPerSeconds,
+    public MetricReported(@JsonProperty("kafkaMessagesInPerSecond") float kafkaMessagesPerSecond, @JsonProperty("occurredOn") LocalDateTime occurredOn, @JsonProperty("kafkaTopic") String kafkaTopic, @JsonProperty("flinkTopic") String flinkTopic,
+                          @JsonProperty("kafkaMaxMessageLatency") int kafkaMaxMessageLatency, @JsonProperty("recordsProcessedPerSecond") int recordsProcessedPerSecond,  @JsonProperty("networkInPerSecond") float networkInPerSecond, @JsonProperty("networkOutPerSecond") float networkOutPerSecond,
                           @JsonProperty("sinkHealthy") Boolean sinkHealthy, @JsonProperty("cpuUtilization") float cpuUtilization, @JsonProperty("memoryUsage") float memoryUsage) {
         super(UUID.randomUUID(), occurredOn);
         this.kafkaTopic = kafkaTopic;
         this.flinkTopic = flinkTopic;
-        this.kafkaMessagesPerSeconds = kafkaMessagesPerSeconds;
+        this.kafkaMessagesPerSecond = kafkaMessagesPerSecond;
         this.kafkaMaxMessageLatency = kafkaMaxMessageLatency;
-        this.recordsProcessedPerSeconds = recordsProcessedPerSeconds;
-        this.networkInPerSeconds = networkInPerSeconds;
-        this.networkOutPerSeconds = networkOutPerSeconds;
+        this.recordsProcessedPerSecond = recordsProcessedPerSecond;
+        this.networkInPerSecond = networkInPerSecond;
+        this.networkOutPerSecond = networkOutPerSecond;
         this.sinkHealthy = sinkHealthy;
         this.cpuUtilization = cpuUtilization;
         this.memoryUsage = memoryUsage;
