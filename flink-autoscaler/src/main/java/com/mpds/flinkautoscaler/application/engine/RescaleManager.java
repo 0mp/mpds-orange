@@ -1,27 +1,17 @@
 package com.mpds.flinkautoscaler.application.engine;
 
-import com.mpds.flinkautoscaler.domain.model.Metric;
 import com.mpds.flinkautoscaler.domain.model.events.DomainEvent;
 import com.mpds.flinkautoscaler.domain.model.events.MetricReported;
 import com.mpds.flinkautoscaler.infrastructure.config.KafkaPredictionConsumerProps;
-import com.mpds.flinkautoscaler.infrastructure.config.KafkaProducerProps;
 import com.mpds.flinkautoscaler.port.adapter.kafka.DomainEventSerDes;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.StringSerializer;
-import org.springframework.cloud.stream.binder.kafka.properties.KafkaConsumerProperties;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Mono;
 import reactor.kafka.receiver.KafkaReceiver;
 import reactor.kafka.receiver.ReceiverOptions;
-import reactor.kafka.sender.KafkaSender;
-import reactor.kafka.sender.SenderOptions;
-import reactor.kafka.sender.SenderRecord;
 
 import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
