@@ -202,11 +202,10 @@ Get the Flink Web UI URL:
   ````
 
 Submit the Flink job and start the application, e.g.:
-```
- Program Arguments: --statebackend.default false --checkpoint hdfs://hadoop-hdfs-namenode:8020/flink/checkpoints --checkpoint.interval 300000
- Parallelism: 1
- Savepoint Path: hdfs://hadoop-hdfs-namenode:8020/flink/savepoints/savepoint-040a83-73e0bac50483
-```
+
+- Parallelism: `1`
+- Program Arguments: `--statebackend.default false --checkpoint hdfs://hadoop-hdfs-namenode:8020/flink/checkpoints --checkpoint.interval 300000`
+- Savepoint Path: `hdfs://hadoop-hdfs-namenode:8020/flink/savepoints/savepoint-040a83-73e0bac50483`
 
 
 Alternatively, Flink could be deployed in application mode
