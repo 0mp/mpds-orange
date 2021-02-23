@@ -7,6 +7,10 @@ Run  `python3 src/deploy_simple_rnn.py`
 The dependencies can be installed with `pip3 install docker/deploy_simple_rnn_cpu/requirements.txt`.
 
 Otherwise a Dockerfile is available in `docker/deploy_simple_rnn_cpu/Dockerfile`.
+Build:
+```
+docker build -t autoscaler-longterm-prediction -f /docker/deploy_simple_rnn_cpu/Dockerfile .
+```
 
 ### Configuration
 
