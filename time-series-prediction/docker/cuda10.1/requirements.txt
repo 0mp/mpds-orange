@@ -1,0 +1,23 @@
+numpy
+Pillow
+pandas
+tqdm
+matplotlib
+jupyter
+seaborn
+kafka-python
+csaps
+
+-f https://download.pytorch.org/whl/torch_stable.html
+torch==1.7.1+cu101
+torchvision==0.8.2+cu101
+torchaudio==0.7.2
+
+pytorch-lightning>=1.1.0
+torchtext
+scipy
+sklearn
+sktime>=0.5.1
+omegaconf
+hydra-core>=1.0.4
+munch

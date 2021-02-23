@@ -138,6 +138,7 @@ def main(cfg : OmegaConf):
                          future = PRED_LEN,
                          cell_type = CFG.model.cell)
     
+    # TODO: check period
     pre_train_lambda(model,
                      SIGNAL,
                      future = PRED_LEN,

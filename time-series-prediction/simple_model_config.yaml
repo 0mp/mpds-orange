@@ -1,5 +1,5 @@
 kafka:
-    ip: 127.0.0.1
+    ip: 34.107.94.158:31090
     in_topic: statistics 
     out_topic: long-term-prediction
     input_interval: 0.1

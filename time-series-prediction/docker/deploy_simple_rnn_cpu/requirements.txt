@@ -1,0 +1,10 @@
+numpy
+tqdm
+matplotlib
+kafka-python
+csaps
+omegaconf
+hydra-core>=1.0.4
+
+-f https://download.pytorch.org/whl/torch_stable.html
+torch==1.7.1+cpu
