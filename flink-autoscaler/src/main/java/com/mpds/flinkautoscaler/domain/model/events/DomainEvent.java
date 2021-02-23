@@ -21,7 +21,7 @@ import java.util.UUID;
 )
 @JsonSubTypes({
         @JsonSubTypes.Type( value = MetricReported.class, name = "MetricReported" ),
-        @JsonSubTypes.Type( value = MetricReported.class, name = "PredictionReported" )
+        @JsonSubTypes.Type( value = PredictionReported.class, name = "PredictionReported" )
 })
 @RequiredArgsConstructor
 public abstract class DomainEvent {

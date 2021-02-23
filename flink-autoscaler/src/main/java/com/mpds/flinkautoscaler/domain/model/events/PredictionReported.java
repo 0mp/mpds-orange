@@ -23,8 +23,9 @@ public class PredictionReported extends DomainEvent {
 
     private String eventTriggerUuid;
 
+
     @JsonCreator
-    public PredictionReported(@JsonProperty("uuid") String uuid, @JsonProperty("occurredOn") LocalDateTime occurredOn, @JsonProperty("predictedWorkload") int predictedWorkload, @JsonProperty("predictionBaseOnDateTime") String predictionBasedOnDateTime, @JsonProperty("eventTriggerUuid") String eventTriggerUuid) {
+    public PredictionReported(@JsonProperty("uuid") String uuid, @JsonProperty("occurredOn") LocalDateTime occurredOn, @JsonProperty("predictedWorkload") int predictedWorkload, @JsonProperty("predictionBasedOnDateTime") String predictionBasedOnDateTime, @JsonProperty("eventTriggerUuid") String eventTriggerUuid) {
         super(UUID.fromString(uuid), occurredOn);
         this.predictedWorkload=predictedWorkload;
         this.predictionBasedOnDateTime=predictionBasedOnDateTime;

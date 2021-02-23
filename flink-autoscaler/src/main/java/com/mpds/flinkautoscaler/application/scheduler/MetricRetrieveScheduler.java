@@ -2,7 +2,6 @@ package com.mpds.flinkautoscaler.application.scheduler;
 
 import com.mpds.flinkautoscaler.application.engine.RescaleManager;
 import com.mpds.flinkautoscaler.application.mappers.PrometheusMetricMapper;
-import com.mpds.flinkautoscaler.domain.model.Data;
 import com.mpds.flinkautoscaler.domain.model.PrometheusMetric;
 import com.mpds.flinkautoscaler.domain.model.events.DomainEvent;
 import com.mpds.flinkautoscaler.domain.model.events.MetricReported;
@@ -16,16 +15,13 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 
 @Component
 @Slf4j
@@ -46,14 +42,19 @@ public class MetricRetrieveScheduler {
     private final RescaleManager rescaleManager;
 
     // Every 5 seconds
-    @Scheduled(fixedDelay = 5000)
+//    @Scheduled(fixedDelay = 5000)
+    @Scheduled(fixedDelay = 10000)
     public void scheduleMetricRetrieval() {
         log.info("Start retrieving metrics...");
 
-        DomainEvent de = allPrometheusRequests().block(Duration.of(1000, ChronoUnit.MILLIS));
-        this.domainEventPublisherReactive.sendMessages(de).subscribe();
+//        DomainEvent de = allPrometheusRequests().block(Duration.of(1000, ChronoUnit.MILLIS));
+
+        allPrometheusRequests().flatMap(this.domainEventPublisherReactive::sendMessages).subscribe();
+//        this.domainEventPublisherReactive.sendMessages(de).subscribe();
 
     }
+
+//    {"uuid":123,"eventType":"ShortTerm","occuredOn":"2021-02-21T17:20:35Z","predictionBasedOnDateTime":"2021-02-21T17:20:35Z","eventTriggerUuid",""}
 
     private Mono<DomainEvent> allPrometheusRequests() {
         LocalDateTime currentDateTime = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
@@ -68,11 +69,25 @@ public class MetricRetrieveScheduler {
 
         return Mono.zip(cpuMsg, kafkaLagMsg, kafkaLoadMsg, maxJobLatencyMsg, memMsg).map(tuple -> {
             float cpu = Float.parseFloat(tuple.getT1().getData().getResult().get(0).getValue()[1].toString());
-            float kafkaLag = Float.parseFloat(tuple.getT2().getData().getResult().get(0).getValue()[1].toString());
-            float kafkaLoad = Float.parseFloat(tuple.getT3().getData().getResult().get(0).getValue()[1].toString());
-            float maxJobLatency = Float.parseFloat(tuple.getT4().getData().getResult().get(0).getValue()[1].toString());
-            float mem = Float.parseFloat(tuple.getT5().getData().getResult().get(0).getValue()[1].toString());
-            DomainEvent domainEvent = new MetricReported(
+            float kafkaLag=0.0f;
+            if(tuple.getT2().getData().getResult().size()>0) {
+                kafkaLag = Float.parseFloat(tuple.getT2().getData().getResult().get(0).getValue()[1].toString());
+            }
+            float kafkaLoad=0.0f;
+            if(tuple.getT3().getData().getResult().size()>0) {
+                kafkaLoad = Float.parseFloat(tuple.getT3().getData().getResult().get(0).getValue()[1].toString());
+            }
+
+            float maxJobLatency=0.0f;
+            if(tuple.getT4().getData().getResult().size()>0) {
+                maxJobLatency = Float.parseFloat(tuple.getT4().getData().getResult().get(0).getValue()[1].toString());
+            }
+
+            float mem=0.0f;
+            if(tuple.getT5().getData().getResult().size()>0) {
+                mem = Float.parseFloat(tuple.getT5().getData().getResult().get(0).getValue()[1].toString());
+            }
+            MetricReported domainEvent = new MetricReported(
                     kafkaLoad,
                     currentDateTime,
                     KAFKA_METRIC_TOPIC,
@@ -86,7 +101,7 @@ public class MetricRetrieveScheduler {
                     mem,
                     kafkaLag);
             log.info(domainEvent.toString());
-            this.rescaleManager.evaluate((MetricReported) domainEvent);
+            this.rescaleManager.evaluate(domainEvent);
             return domainEvent;
         });
 
