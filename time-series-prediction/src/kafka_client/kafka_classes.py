@@ -70,7 +70,7 @@ class KafkaPredictionProducer():
     
     def __init__(self, topic, ip, interval):
         
-        producer = get_producer(ip)
+        self.producer = get_producer(ip)
         self.topic = topic
         self.interval = interval
     
@@ -88,5 +88,5 @@ class KafkaPredictionProducer():
                .replace(tzinfo=datetime.timezone.utc).isoformat(),
                "eventType" : "LongtermPredictionReported"}
         
-        #print(out)
-        producer.send(self.topic, out)
+        print(out)
+        self.producer.send(self.topic, out)

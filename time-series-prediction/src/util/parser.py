@@ -1,5 +1,6 @@
 import argparse
 
+# deprecated
 def get_GRU_parser():
     parser = argparse.ArgumentParser()
 
