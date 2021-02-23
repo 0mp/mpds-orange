@@ -17,11 +17,11 @@ import java.util.UUID;
 @Getter
 public class PredictionReported extends DomainEvent {
 
-    private int predictedWorkload;
+    private final int predictedWorkload;
 
-    private String predictionBasedOnDateTime;
+    private final String predictionBasedOnDateTime;
 
-    private String eventTriggerUuid;
+    private final String eventTriggerUuid;
 
 
     @JsonCreator

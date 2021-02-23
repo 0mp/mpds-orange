@@ -47,14 +47,11 @@ public class MetricRetrieveScheduler {
     public void scheduleMetricRetrieval() {
         log.info("Start retrieving metrics...");
 
-//        DomainEvent de = allPrometheusRequests().block(Duration.of(1000, ChronoUnit.MILLIS));
-
         allPrometheusRequests().flatMap(this.domainEventPublisherReactive::sendMessages).subscribe();
-//        this.domainEventPublisherReactive.sendMessages(de).subscribe();
 
     }
 
-//    {"uuid":123,"eventType":"ShortTerm","occuredOn":"2021-02-21T17:20:35Z","predictionBasedOnDateTime":"2021-02-21T17:20:35Z","eventTriggerUuid",""}
+
 
     private Mono<DomainEvent> allPrometheusRequests() {
         LocalDateTime currentDateTime = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
@@ -102,6 +99,7 @@ public class MetricRetrieveScheduler {
                     kafkaLag);
             log.info(domainEvent.toString());
             this.rescaleManager.evaluate(domainEvent);
+//            PredictionReported domainEvent = new PredictionReported(UUID.randomUUID().toString(), LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC).toString(), 1, LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC).toString(), UUID.randomUUID().toString());
             return domainEvent;
         });
 

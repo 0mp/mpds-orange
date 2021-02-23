@@ -22,9 +22,6 @@ public class PredictionConsumer {
     @Bean
     public Consumer<Flux<Message<PredictionReported>>> prediction() {
        return flux -> flux.flatMap(predictionReportedMessage -> {
-           log.info("-------ü-üüü");
-           log.info(predictionReportedMessage.getPayload().toString());
-           log.info(predictionReportedMessage.toString());
            PredictionReported predictionReported = predictionReportedMessage.getPayload();
             log.debug("Start processing: {}", predictionReported.toString());
 //            Acknowledgment acknowledgment = metricReportedMessage.getHeaders().get(KafkaHeaders.ACKNOWLEDGMENT, Acknowledgment.class);
@@ -33,19 +30,4 @@ public class PredictionConsumer {
             return Mono.empty();
        }).doOnError(Throwable::getMessage).subscribe();
     }
-
-//    @Bean
-//    public Consumer<Flux<Message<MetricReported>>> prediction() {
-//        return flux -> flux.flatMap(predictionReportedMessage -> {
-//            log.info("-------ü-üüü");
-//            log.info(predictionReportedMessage.getPayload().toString());
-//            log.info(predictionReportedMessage.toString());
-//            MetricReported predictionReported = predictionReportedMessage.getPayload();
-//            log.debug("Start processing: {}", predictionReported.toString());
-////            Acknowledgment acknowledgment = metricReportedMessage.getHeaders().get(KafkaHeaders.ACKNOWLEDGMENT, Acknowledgment.class);
-////           assert acknowledgment != null;
-////           acknowledgment.acknowledge();
-//            return Mono.empty();
-//        }).doOnError(Throwable::getMessage).subscribe();
-//    }
 }
