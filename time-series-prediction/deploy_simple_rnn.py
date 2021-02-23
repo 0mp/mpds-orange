@@ -1,7 +1,8 @@
-from parser import get_GRU_parser
-from models import CNN1D_1l_RNN
+from util.parser import get_GRU_parser
+from models.simple_models import CNN1D_1l_RNN
 from train import pre_train_lambda
-from kafka_util import KafkaConsumerThread, sim_traffic, KafkaPredictionProducer
+from kafka_client.kafka_classes import KafkaConsumerThread, KafkaPredictionProducer
+from kafka_client.kafka_util import sim_traffic
 from train import forward_walk_train as train
 
 import numpy as np
@@ -49,14 +50,14 @@ def wait_for_new(kafka, old):
         
 def find_max_train_iter(kafka, model):
 
-    train_iter = kafka.pointer - (SEQ_LEN + PRED_LEN)
+    train_iter = kafka.pointer - (SEQ_LEN + PRED_LEN) + 1
 
     with kafka.lock:
         hist, i, _ = kafka.get_current()
         opt = optim.AdamW(model.parameters())
         crit = nn.MSELoss()
         total_dur = 0
-        tensor_in, _, _ = normalize_input(hist[i-(train_iter+SEQ_LEN+PRED_LEN):i])
+        tensor_in, _, _ = normalize_input(hist[i-(train_iter+SEQ_LEN+PRED_LEN - 1):i])
         for _ in range(3):
             dur, _ = train(model,
                            tensor_in,

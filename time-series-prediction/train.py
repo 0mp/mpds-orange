@@ -96,8 +96,8 @@ def forward_walk_train(model, time_series, optimizer, criterion, seq_len=32, fut
     
     start = time() * 1000
     loss_sum = 0
-    iters = time_series.size(2) - (seq_len + future)
-    print(iters)
+    iters = time_series.size(2) - (seq_len + future) + 1
+    #print(iters)
     model.train()
     for i in range(iters):
         optimizer.zero_grad()
@@ -108,6 +108,6 @@ def forward_walk_train(model, time_series, optimizer, criterion, seq_len=32, fut
         
     duration = int(round(time()*1000 - start))
     loss_avg = loss_sum/iters
-    print(f"Training completed in {duration} ms - Loss: {loss_avg}")
+    #print(f"Training completed in {duration} ms - Loss: {loss_avg}")
     return duration, loss_avg
         

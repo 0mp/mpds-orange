@@ -3,6 +3,11 @@
 
 import matplotlib
 from matplotlib import pyplot as plt
+import numpy as np
+
+def plot_signal(signal, f=0, t=20, tick_amount=200):
+    ticks = np.linspace(f, t, tick_amount)
+    plt.plot(ticks, signal(ticks))
 
 class LiveLine:
     def __init__(self, graph, fmt=''):
