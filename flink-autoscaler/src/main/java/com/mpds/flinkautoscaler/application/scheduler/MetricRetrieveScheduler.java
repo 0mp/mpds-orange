@@ -51,8 +51,6 @@ public class MetricRetrieveScheduler {
 
     }
 
-
-
     private Mono<DomainEvent> allPrometheusRequests() {
         LocalDateTime currentDateTime = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
         String currentDateTimeString = currentDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'"));
@@ -65,7 +63,11 @@ public class MetricRetrieveScheduler {
 
 
         return Mono.zip(cpuMsg, kafkaLagMsg, kafkaLoadMsg, maxJobLatencyMsg, memMsg).map(tuple -> {
-            float cpu = Float.parseFloat(tuple.getT1().getData().getResult().get(0).getValue()[1].toString());
+            float cpu=0.0f;
+            if(tuple.getT1().getData().getResult().size()>0) {
+                cpu = Float.parseFloat(tuple.getT1().getData().getResult().get(0).getValue()[1].toString());
+            }
+            
             float kafkaLag=0.0f;
             if(tuple.getT2().getData().getResult().size()>0) {
                 kafkaLag = Float.parseFloat(tuple.getT2().getData().getResult().get(0).getValue()[1].toString());
