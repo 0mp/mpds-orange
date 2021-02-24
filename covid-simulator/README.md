@@ -53,7 +53,7 @@ helm uninstall covid-simulator
 ```
 * Properties for the deployment on k8s can be modified through the k8s/helm/values.yaml file
 
-### Links`
+### Links
 * Kafka Performance Tuning — Ways for Kafka Optimization: https://medium.com/@rinu.gour123/kafka-performance-tuning-ways-for-kafka-optimization-fdee5b19505b
 * Using Helm and Kubernetes: https://www.baeldung.com/kubernetes-helm
 * Jib - Containerize your Gradle Java project: https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin#quickstart
