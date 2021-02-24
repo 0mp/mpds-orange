@@ -37,7 +37,7 @@ gradlew.bat clean jib
 ```
 * Get the credentials from the Google Kubernetes Engine:
 ```
-gcloud container clusters get-credentials --project mpds-297011 --region europe-west3-c  mpds-cluster
+gcloud container clusters get-credentials --project mpds-task-2 --region europe-west3-c  mpds-cluster
 ```
 * Use the Helm charts under covid-simulator/k8s/helm to do a deployment on the Kubernetes Cluster, e.g.:
 ```
