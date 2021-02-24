@@ -8,7 +8,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.util.function.Consumer;
 
@@ -27,7 +26,7 @@ public class PredictionConsumer {
 //            Acknowledgment acknowledgment = metricReportedMessage.getHeaders().get(KafkaHeaders.ACKNOWLEDGMENT, Acknowledgment.class);
 //           assert acknowledgment != null;
 //           acknowledgment.acknowledge();
-            return Mono.empty();
+           return this.domainEventService.processDomainEvent(predictionReported);
        }).doOnError(Throwable::getMessage).subscribe();
     }
 }

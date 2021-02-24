@@ -22,6 +22,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.UUID;
 
 @Component
 @Slf4j
@@ -37,7 +38,7 @@ public class MetricRetrieveScheduler {
 
     private final PrometheusMetricMapper prometheusMetricMapper;
 
-    private static final String KAFKA_METRIC_TOPIC ="covid";
+//    private static final String KAFKA_METRIC_TOPIC ="covid";
 
     private final RescaleManager rescaleManager;
 
@@ -67,7 +68,7 @@ public class MetricRetrieveScheduler {
             if(tuple.getT1().getData().getResult().size()>0) {
                 cpu = Float.parseFloat(tuple.getT1().getData().getResult().get(0).getValue()[1].toString());
             }
-            
+
             float kafkaLag=0.0f;
             if(tuple.getT2().getData().getResult().size()>0) {
                 kafkaLag = Float.parseFloat(tuple.getT2().getData().getResult().get(0).getValue()[1].toString());
@@ -87,9 +88,10 @@ public class MetricRetrieveScheduler {
                 mem = Float.parseFloat(tuple.getT5().getData().getResult().get(0).getValue()[1].toString());
             }
             MetricReported domainEvent = new MetricReported(
+                    UUID.randomUUID(),
                     kafkaLoad,
                     currentDateTime,
-                    KAFKA_METRIC_TOPIC,
+                    this.prometheusProps.getSourceTopic(),
                     "",
                     maxJobLatency,
                     0,
@@ -101,7 +103,7 @@ public class MetricRetrieveScheduler {
                     kafkaLag);
             log.info(domainEvent.toString());
             this.rescaleManager.evaluate(domainEvent);
-//            PredictionReported domainEvent = new PredictionReported(UUID.randomUUID().toString(), LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC).toString(), 1, LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC).toString(), UUID.randomUUID().toString());
+
             return domainEvent;
         });
 
@@ -110,8 +112,7 @@ public class MetricRetrieveScheduler {
     private Mono<PrometheusMetric> getPrometheusMetric(MultiValueMap<String, String> message) {
 
         return this.webClient.post()
-                .uri("http://34.107.94.158:30090/api/v1/query")
-//                .uri(prometheusProps.getQueryPath())
+                .uri(this.prometheusProps.getQueryUri())
                 .body(BodyInserters.fromFormData(message))
                 .retrieve()
                 .bodyToMono(PrometheusMetric.class);
@@ -161,7 +162,7 @@ public class MetricRetrieveScheduler {
 
         log.info("getKafkaMessagesPerSecond for dateTime: " + dateTime);
         LinkedMultiValueMap<String, String> lmvn = new LinkedMultiValueMap<>();
-        final String PROMETHEUS_QUERY = "sum by (covid) (rate(kafka_server_brokertopicmetrics_messagesinpersec_count[2m]))";
+        final String PROMETHEUS_QUERY = "sum by ("+this.prometheusProps.getSourceTopic()+") (rate(kafka_server_brokertopicmetrics_messagesinpersec_count[2m]))";
         lmvn.add("query", PROMETHEUS_QUERY);
         lmvn.add("time", dateTime);
         return lmvn;
