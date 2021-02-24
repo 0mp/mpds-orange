@@ -3,6 +3,7 @@ package com.mpds.flinkautoscaler.application.service.impl;
 import com.mpds.flinkautoscaler.application.service.DomainEventService;
 import com.mpds.flinkautoscaler.domain.model.events.DomainEvent;
 import com.mpds.flinkautoscaler.infrastructure.config.FlinkProps;
+import com.mpds.flinkautoscaler.infrastructure.repository.ClusterPerformanceBenchmarkRepository;
 import com.mpds.flinkautoscaler.port.adapter.rest.request.FlinkRunJobRequest;
 import com.mpds.flinkautoscaler.port.adapter.rest.request.FlinkSavepointRequest;
 import com.mpds.flinkautoscaler.port.adapter.rest.response.FlinkRunJobResponse;
@@ -22,6 +23,8 @@ public class DomainEventServiceImpl implements DomainEventService {
 
     private final WebClient webClient;
 
+    private final ClusterPerformanceBenchmarkRepository clusterPerformanceBenchmarkRepository;
+
     private final FlinkProps flinkProps;
 
     // Flink API paths
@@ -29,8 +32,9 @@ public class DomainEventServiceImpl implements DomainEventService {
     private final String FLINK_SAVEPOINT_INFO_PATH = "/jobs/{jobId}/savepoints/{triggerId}";
     private final String FLINK_JAR_RUN_PATH = "/jars/{jarId}/run";
 
-    public DomainEventServiceImpl(FlinkProps flinkProps) {
+    public DomainEventServiceImpl(FlinkProps flinkProps, ClusterPerformanceBenchmarkRepository clusterPerformanceBenchmarkRepository) {
         this.flinkProps = flinkProps;
+        this.clusterPerformanceBenchmarkRepository = clusterPerformanceBenchmarkRepository;
         this.webClient = WebClient.builder()
                 .baseUrl(flinkProps.getBaseUrl())
                 .build();
@@ -41,6 +45,13 @@ public class DomainEventServiceImpl implements DomainEventService {
     public Mono<Void> processDomainEvent(DomainEvent domainEvent) {
         // 1. TODO: Process prediction data and decide action under certain conditions
         // Note: Redis could be implemented to save the state to decide if a rescale should be triggered or not
+
+        // Get current parallelism and throughput of the current cluster using the data from the cache
+//        int Parallelism=1;
+//        this.clusterPerformanceBenchmarkRepository.findByParallelism(1)
+//                .flatMap(clusterPerformanceBenchmark -> {
+//                    // TODO
+//                })
 
         // 2. Carry out action by using the WebClient to trigger rescaling
         // Target parallelism which has been calculated from previous step (TO BE DONE)
@@ -72,6 +83,11 @@ public class DomainEventServiceImpl implements DomainEventService {
                     log.error("Flink Rescaling has failed: ", throwable);
                     return Mono.error(throwable);
                 }).then();
+
+        // TODO: Save cluster performance to the Postgres DB
+        //        ClusterPerformanceBenchmark clusterPerformanceBenchmark = new ClusterPerformanceBenchmark();
+        //        Set all the data and save to db
+        //        this.clusterPerformanceBenchmarkRepository.save(clusterPerformanceBenchmark);
     }
 
     public Mono<FlinkSavepointInfoResponse> getFlinkSavepointInfo(String jobId, String triggerId) {
