@@ -53,7 +53,7 @@ public class DomainEventServiceImpl implements DomainEventService {
         // 2.1 Create Savepoint for the job
         return this.createFlinkSavepoint(this.flinkProps.getJobId(), this.flinkProps.getSavepointDirectory(), true)
                 // 2.2 Get savepoint path using the received request id
-                // Wait with the request for 10 seconds so that the savepoint can complate
+                // Wait with the request for 10 seconds so that the savepoint can complete
                 .delayElement(Duration.ofSeconds(10))
                 .flatMap(flinkSavepointResponse -> {
                     log.info("flinkSavepointResponse: " + flinkSavepointResponse.toString());
