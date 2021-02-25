@@ -41,10 +41,6 @@ _Skip this section if there is already an existent Kubernetes Cluster_
   --filter="bindings.members:terraform@$project.iam.gserviceaccount.com"
   ```
   
-* Create the Google Cloud Storage bucket through the GCP console:
-  ```
-  mpds-task-2
-  ```
 * Navigate to the folder k8s/terraform and initialize Terraform through the command:
   ```
   terraform init
