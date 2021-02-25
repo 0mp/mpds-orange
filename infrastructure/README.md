@@ -8,7 +8,7 @@ on-premise, the Helm charts can be used to do the deployments of the application
 
 * Install Terraform (see https://learn.hashicorp.com/tutorials/terraform/install-cli?in=terraform/gcp-get-started)
 * Install the gcloud sdk (see https://cloud.google.com/sdk) in case the gcp commands are executed from the local machine
-  instead of using Google Cloud Shell`
+  instead of using Google Cloud Shell
 * Download the Flink package to get the cli and extract it: 
   ```
   wget https://downloads.apache.org/flink/flink-1.12.1/flink-1.12.1-bin-scala_2.12.tgz 
