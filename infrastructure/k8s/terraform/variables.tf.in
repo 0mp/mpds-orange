@@ -2,7 +2,7 @@ variable "project_id" {
   description = <<-EOF
   Components will be deployed to this GCP project.
   EOF
-  default = "mpds-task-2"
+  default = "%%PROJECT_NAME%%"
 }
 
 variable "region" {

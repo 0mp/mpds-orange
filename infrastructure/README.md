@@ -42,6 +42,14 @@ _Skip this section if there is already an existent Kubernetes Cluster_
   --filter="bindings.members:terraform@$project.iam.gserviceaccount.com"
   ```
 
+* Rerun `./scripts/cluster-terraform.sh` if Terraform fails. The error message may look like this:
+
+  > google_project_service.service[3]: Creation complete after 1m32s [id=mpds-task-orange/compute.googleapis.com]
+  >
+  > Error: Error creating service account: googleapi: Error 403: Identity and Access Management (IAM) API has not been used in project 941491445542 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/iam.googleapis.com/overview?project=941491445542 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry., accessNotConfigured
+  >
+  > Error: Error creating Network: googleapi: Error 403: Compute Engine API has not been used in project 941491445542 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/compute.googleapis.com/overview?project=941491445542 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry., accessNotConfigured
+
 ## Deploying the applications
 
 ### Deploying Hadoop for HDFS
