@@ -1,5 +1,6 @@
 #! /bin/sh -
 
+set -eu
 set -x
 
 project="mpds-task-orange"
