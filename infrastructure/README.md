@@ -29,9 +29,10 @@ docker push eu.gcr.io/mpds-task-2/covid-engine:2.3.0
 
 _Skip this section if there is already an existent Kubernetes Cluster_
 
-* Use Google Cloud Shell (see https://cloud.google.com/shell) or the gcloud sdk with a cli to run the commands from your
-  local machine
-* Run `./scripts/cluster-setup-accounts.sh`.
+* Run `make cluster-create`.
+
+### Troubleshooting
+
 * Retrieve the IAM roles if required:
   ```
   project="mpds-task-orange"
@@ -40,30 +41,7 @@ _Skip this section if there is already an existent Kubernetes Cluster_
   --format='table(bindings.role)' \
   --filter="bindings.members:terraform@$project.iam.gserviceaccount.com"
   ```
-  
-* Navigate to the folder k8s/terraform and initialize Terraform through the command:
-  ```
-  terraform init
-  ```
-* Validate the Terraform plan:
-  ```
-  terraform plan
-  ```
-* Apply the Terraform plan and confirm the action:
-  ```
-  terraform apply
-  ```
-* Configure kubectl with Terraform
-  ```
-  gcloud container clusters get-credentials $(terraform output cluster_name) --zone $(terraform output zone)
-  ```
-* Repeat the Terraform commands in the same order to apply new changes or in case of failures, i.e.:
-  ```
-  terraform init
-  terraform plan
-  terraform apply
-  ```
-  
+
 ## Deploying the applications
 
 ### Deploying Hadoop for HDFS
