@@ -56,16 +56,6 @@ _Skip this section if there is already an existent Kubernetes Cluster_
 
 Run `./scripts/hdfs-deploy.sh`.
 
-#### TO BE REMOVED since the approach was not suitable
-Deploy the Hadoop cluster for HDFS with dataproc:
-```
-gcloud dataproc clusters create hadoop --region=europe-west3
-```
-Delete Dataproc-Cluster
-```
-  gcloud dataproc clusters delete hadoop --region=europe-west3
-```
-
 ### Deploying Kafka, Prometheus, Grafana
 Kafka, Prometheus, and Grafana can be deployed on a Kubernetes cluster using the Helm charts located in the `infrastructure/k8s/helm` directory. Configure which charts to deploy in the global values.yaml by setting enabled: true for each desired technology. Cluster sizes and ports for external access can also be specified here.
 Each subchart can be deployed by itself and contains its own values.yaml file with futher configurations. If deployed from the umbrella chart, values in the global values.yaml will overwrite the values in the subchart's values.yaml.
