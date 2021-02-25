@@ -53,40 +53,8 @@ _Skip this section if there is already an existent Kubernetes Cluster_
 ## Deploying the applications
 
 ### Deploying Hadoop for HDFS
-SSH into the master node and create folder on HDFS
-```
-hadoop fs -mkdir /flink
-hadoop fs -mkdir /flink/checkpoints
-```
-Add gradiant helm repo:
-```
-  helm repo add gradiant https://gradiant.github.io/charts
-```
-Use Helm to install HDFS with persistent volumes (see https://hub.kubeapps.com/charts/gradiant/hdfs):
-```
-helm install hadoop \
-  --set persistence.nameNode.enabled=true \
-  --set persistence.nameNode.storageClass=standard \
-  --set persistence.dataNode.enabled=true \
-  --set persistence.dataNode.storageClass=standard \
-  gradiant/hdfs
-```
 
-Connect to the Hadoop pod
-```
-kubectl exec -it hadoop-hdfs-namenode-0 bash
-```
-
-Run the following commands on the Hadoop name node pod
-```
-hadoop fs -ls /
-hadoop fs -mkdir /flink
-hadoop fs -mkdir /flink/checkpoints
-hadoop fs -mkdir /flink/savepoints
-hadoop fs -chown flink /flink
-hadoop fs -chown flink /flink/checkpoints
-hadoop fs -chown flink /flink/savepoints
-```
+Run `./scripts/hdfs-deploy.sh`.
 
 #### TO BE REMOVED since the approach was not suitable
 Deploy the Hadoop cluster for HDFS with dataproc:
