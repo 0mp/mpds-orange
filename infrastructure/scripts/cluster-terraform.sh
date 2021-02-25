@@ -26,6 +26,6 @@ ln -fs "$PWD/key.json" k8s/terraform/key.json
 (cd k8s/terraform && terraform apply)
 
 # Configure kubectl with Terraform.
-gcloud container clusters get-credentials \
+(cd k8s/terraform && gcloud container clusters get-credentials \
 	"$(terraform output cluster_name)" \
-	--zone "$(terraform output zone)"
+	--zone "$(terraform output zone)")
