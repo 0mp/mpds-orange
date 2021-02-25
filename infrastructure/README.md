@@ -31,41 +31,14 @@ _Skip this section if there is already an existent Kubernetes Cluster_
 
 * Use Google Cloud Shell (see https://cloud.google.com/shell) or the gcloud sdk with a cli to run the commands from your
   local machine
-* Authenticate through gcloud if no gcp service account is used:
-  ```
-  gcloud auth application-default login
-  ```
-* Create Service Account for Terraform
-  ```
-  gcloud iam service-accounts create terraform \
-   --description="This service account is used for Terraform" \
-   --display-name="Terraform"
-  ```
-* Create IAM policy binding
-  ```
-  gcloud projects add-iam-policy-binding mpds-task-2 \
-   --member="serviceAccount:terraform@mpds-task-2.iam.gserviceaccount.com" \
-   --role="roles/owner"
-  ```
-* Add IAM policy binding service account user to user accounts
-  ```
-  gcloud iam service-accounts add-iam-policy-binding \
-   terraform@mpds-task-2.iam.gserviceaccount.com \
-   --member="user:MY_GCP_EMAIL_ADDRESS" \
-   --role="roles/iam.serviceAccountUser"
-  ```
-  _While Replacing MY_GCP_EMAIL_ADDRESS with the real account_
-* Create service account key for Terraform
-  ```
-  gcloud iam service-accounts keys create ./key.json \
-  --iam-account terraform@mpds-task-2.iam.gserviceaccount.com
-  ```
+* Run `./scripts/cluster-setup-accounts.sh`.
 * Retrieve the IAM roles if required:
   ```
-  gcloud projects get-iam-policy mpds-task-2 \
+  project="mpds-task-orange"
+  gcloud projects get-iam-policy "$project" \
   --flatten="bindings[].members" \
   --format='table(bindings.role)' \
-  --filter="bindings.members:terraform@mpds-task-2.iam.gserviceaccount.com"
+  --filter="bindings.members:terraform@$project.iam.gserviceaccount.com"
   ```
   
 * Create the Google Cloud Storage bucket through the GCP console:
