@@ -18,25 +18,6 @@ Run `make cluster-create` to create a cluster.
 
 In order to destroy it, run `make cluster-destroy`.
 
-### Troubleshooting
-
-* Retrieve the IAM roles if required:
-  ```
-  project="mpds-task-orange"
-  gcloud projects get-iam-policy "$project" \
-  --flatten="bindings[].members" \
-  --format='table(bindings.role)' \
-  --filter="bindings.members:terraform@$project.iam.gserviceaccount.com"
-  ```
-
-* Rerun `./scripts/cluster-terraform.sh` if Terraform fails. The error message may look like this:
-
-  > google_project_service.service[3]: Creation complete after 1m32s [id=mpds-task-orange/compute.googleapis.com]
-  >
-  > Error: Error creating service account: googleapi: Error 403: Identity and Access Management (IAM) API has not been used in project 941491445542 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/iam.googleapis.com/overview?project=941491445542 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry., accessNotConfigured
-  >
-  > Error: Error creating Network: googleapi: Error 403: Compute Engine API has not been used in project 941491445542 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/compute.googleapis.com/overview?project=941491445542 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry., accessNotConfigured
-
 ## Deploying the applications
 
 Simply, run `make services-install`.
@@ -146,3 +127,20 @@ make flink-run-job
   ```
   gcloud container clusters get-credentials mpds-task-2-cluster --zone europe-west3-a
   ```
+
+* Retrieve the IAM roles if required:
+  ```
+  project="mpds-task-orange"
+  gcloud projects get-iam-policy "$project" \
+  --flatten="bindings[].members" \
+  --format='table(bindings.role)' \
+  --filter="bindings.members:terraform@$project.iam.gserviceaccount.com"
+  ```
+
+* Rerun `./scripts/cluster-terraform.sh` if Terraform fails. The error message may look like this:
+
+  > google_project_service.service[3]: Creation complete after 1m32s [id=mpds-task-orange/compute.googleapis.com]
+  >
+  > Error: Error creating service account: googleapi: Error 403: Identity and Access Management (IAM) API has not been used in project 941491445542 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/iam.googleapis.com/overview?project=941491445542 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry., accessNotConfigured
+  >
+  > Error: Error creating Network: googleapi: Error 403: Compute Engine API has not been used in project 941491445542 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/compute.googleapis.com/overview?project=941491445542 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry., accessNotConfigured
