@@ -41,32 +41,36 @@ Incoming Data, 'metric' topic kafka example:
 
 Outgoing Data, 'st_prediction' topic example message:
 {
-    "prediction": 0.006446247827380952,
-    "occurredOn": "2021-02-21T17:25:51Z"
+    "occurredOn": timestamp of last observation
+    "predictedWorkload":prediction
+    "eventTriggerUuid": uuid of the last observation
+    "eventType":"PredictionReported",
+    "predictionBasedOnDateTime": timestamp of the predicted workload
+    'uuid': event uuid           
 }
 """
 
 
 # Globalen Variablen
 LOAD_TOPIC = 'metric'
-PREDICTION_TOPIC = 'prediction'
-REBUILD_TIME_MIN = 5
+PREDICTION_TOPIC = 'short-term-predictions'
+REBUILD_TIME_MIN = 2
 REBUILD_TIME_SEC = REBUILD_TIME_MIN * 60
 REGRESSION_WINDOW_FACTOR = 12
 REGRESSION_WINDOW_MIN = REBUILD_TIME_MIN * REGRESSION_WINDOW_FACTOR
 REGRESSION_WINDOW_SEC = REGRESSION_WINDOW_MIN * 60
-SPIKE_WINDOW_MIN = 3 #minutes
+SPIKE_WINDOW_MIN = 1 #minutes
 
 
 def create_predictions():
     logging.info('Create Predictions')
     consumer =  KafkaConsumer(LOAD_TOPIC,
-                         bootstrap_servers=['localhost:9092'],
+                         bootstrap_servers=['35.246.173.215:31090'],
                          auto_offset_reset='earliest', 
                          enable_auto_commit=False,
                          value_deserializer=lambda m: json.loads(m.decode('ascii')),
-                         consumer_timeout_ms=30000)
-    producer = KafkaProducer(bootstrap_servers=['localhost:9092'],
+                         consumer_timeout_ms=60000)
+    producer = KafkaProducer(bootstrap_servers=['35.246.173.215:31090'],
                         value_serializer=lambda v: json.dumps(v).encode('utf-8'))
 
     OBSERVATION = []
@@ -82,7 +86,7 @@ def create_predictions():
                                 linear_regression[1]
             if np.square(curr_prediction - message.value['kafkaMessagesPerSecond']) > 8 * MSE:
                 spike_data.append(message.value)
-                if len(spike_data) > 3:
+                if len(spike_data) > 6:
                     logging.warning('Spike Detected')
                     OBSERVATION = spike_data
                     spike_data = []
@@ -102,18 +106,20 @@ def create_predictions():
 
         # Truncate Observations based on time window
         curr_time = datetime.strptime(message.value['occurredOn'],'%Y-%m-%dT%H:%M:%SZ')
-        while abs((curr_time - datetime.strptime(OBSERVATION[0]['occurredOn'],'%Y-%m-%dT%H:%M:%SZ')).seconds) > REGRESSION_WINDOW_SEC :
+        while abs((curr_time - datetime.strptime(OBSERVATION[0]['occurredOn'],'%Y-%m-%dT%H:%M:%SZ')).seconds) > REGRESSION_WINDOW_SEC and len(OBSERVATION) > 3:
+                logging.info("Pop observation, too old")
                 OBSERVATION.pop(0)
 
         
         # Calculate Regression
         y = np.array([o['kafkaMessagesPerSecond'] for o in OBSERVATION])
+        
         x = np.array([*range(len(OBSERVATION))])
         quadratic_regression = np.polyfit(x,y,2)
         linear_regression = np.polyfit(x,y,1)
 
         # Calculate future x for prediction
-        future_x = len(OBSERVATION) + REBUILD_TIME_MIN
+        future_x = len(OBSERVATION) + REBUILD_TIME_MIN * 6
 
         # Calculate MSE for spike detection
         MSE = np.square(np.subtract(y,np.polyval(linear_regression,x))).mean() 
@@ -132,8 +138,10 @@ def create_predictions():
         nextTime = last_ob_time + timedelta(minutes = REBUILD_TIME_MIN)
         producer.send(PREDICTION_TOPIC,
             {'predictedWorkload':prediction,
-            'occurredOn': nextTime.strftime('%Y-%m-%dT%H:%M:%SZ'),
-            "eventType":"PredictionReported",
+            'occurredOn': last_ob_time.strftime('%Y-%m-%dT%H:%M:%SZ'),
+            "eventTriggerUuid":OBSERVATION[-1]['uuid'],
+            "eventType":"ShorttermPredictionReported",
+            "predictionBasedOnDateTime":nextTime.strftime('%Y-%m-%dT%H:%M:%SZ'),
             'uuid': str(uuid.uuid4())})
             
 
