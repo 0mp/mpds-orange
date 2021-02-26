@@ -16,7 +16,7 @@ helm install hadoop \
 	gradiant/hdfs
 
 # Connect to the Hadoop pod and create necessary.
-kubectl exec hadoop-hdfs-namenode-0 -c namenode -it -- /bin/bash <<COMMANDS
+kubectl exec hadoop-hdfs-namenode-0 -c namenode -i -- /bin/bash <<COMMANDS
 	set -eux
 	for dir in /flink /flink/checkpoints /flink/savepoints; do
 		if ! hadoop fs -test -d "\$dir"; then
