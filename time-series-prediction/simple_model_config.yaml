@@ -5,7 +5,7 @@ kafka:
     input_interval: 10
     avg_agg_len: 1
     expected_period: 100
-    self_simulate: True
+    self_simulate: False
 model:
     seq_len: 64
     pred_len: 32
@@ -14,6 +14,6 @@ model:
     stack: 3
 train:
     time: 5
-    buffer: 50
+    buffer: 20
     LR: 0.001
     pretrain_iters: 100
