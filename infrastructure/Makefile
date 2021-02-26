@@ -24,6 +24,7 @@ services-uninstall:
 FLINK_DIR=	flink-1.12.1
 FLINK_TARBALL=	${FLINK_DIR}-bin-scala_2.12.tgz
 FLINK_DOCKER_IMAGE_COVID_ENGINE=	eu.gcr.io/${PROJECT_NAME}/covid-engine:2.3.1
+FLINK_JOB_JAR_COVID_ENGINE=		docker/flink/covid-engine-2.3.1.jar
 
 ${FLINK_TARBALL}:
 	wget -O "$@" "https://downloads.apache.org/flink/flink-1.12.1/$@"
@@ -52,6 +53,11 @@ flink-deploy: ${FLINK_DIR}
 flink-stop:
 	kubectl get deployments | awk '/^flink-cluster.*/{ print $$1 }' | \
 		xargs -n 1 kubectl delete deployment
+
+flink-run-job:
+	export FLINK_DIR="${FLINK_DIR}" && \
+	export FLINK_JOB_JAR_COVID_ENGINE="${FLINK_JOB_JAR_COVID_ENGINE}" && \
+	./scripts/flink-run-job.sh
 
 flink-get-web-ui:
 	node_port=$$(kubectl get --namespace default -o jsonpath="{.spec.ports[0].nodePort}" services flink-cluster-rest) && \
