@@ -27,26 +27,53 @@ r2dbc:
     show-sql: true
 # Kafka config
 kafka:
-  bootstrap-server: localhost:9092
+#  bootstrap-server: localhost:9092
+  bootstrap-server: 35.246.173.215:31090
+  st-prediction-topic: st-prediction
+  lt-prediction-topic: lt-prediction
   topic: metric
   client-id-config: flink-autoscaler
   acks-config: all
 metrics-server:
   prometheus:
-    base-url: http://34.107.94.158:30090
-    query-path: /api/v1/query
+    query-uri: http://35.246.173.215:30090/api/v1/query
+    source-topic: covid
+autoscaler:
+  flink:
+    base-url: http://35.246.152.162:8081
+    job-id: de1a7fa5b778c36f692de018f7b94a0e
+    jar-id: efa707d3-0c47-44de-800c-7bd6db8669c3_covid-engine-2.3.1.jar
+    program-args: --statebackend.default false --checkpoint hdfs://hadoop-hdfs-namenode:8020/flink/checkpoints --checkpoint.interval 300000
+    savepoint-directory: hdfs://hadoop-hdfs-namenode:8020/flink/savepoints
 
+#    base-url: http://34.107.94.158:30090
+#    query-path: /api/v1/query
 spring:
   cloud:
     stream:
       function:
-        bindings:
-          prediction-in-0: input
+#        bindings:
+#          metrics-in-0: metrics
+        definition: metrics;shortTermPrediction;longTermPrediction
+      #          prediction-in-0: input
+#          prediction-in-0: input
+#          predictionlt-in-0: predictionlt
+
       kafka:
         binder:
-          brokers: localhost
+          brokers: 35.246.173.215:31090
+#          defaultBrokerPort: 30002
+#          brokers: localhost:9092
       bindings:
-        input:
-          destination: prediction
-          group: flink-autoscaler
+        metrics-in-0:
+          destination: metric
+          group: autoscaling-group
+          content-type: application/json
+        shortTermPrediction-in-0:
+          destination: short-term-predictions
+          group: st-autoscaling-group
+          content-type: application/json
+        longTermPrediction-in-0:
+          destination: long-term-predictions
+          group: lt-autoscaling-group
           content-type: application/json
