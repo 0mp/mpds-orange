@@ -53,7 +53,7 @@ public class DomainEventPublisherReactive {
         return sender.send(Mono.just(SenderRecord.create(producerRecord, domainEvent.getUuid().toString())))
                 .doOnNext(r -> {
                     RecordMetadata metadata = r.recordMetadata();
-                    log.info("Message %s sent successfully, topic-partition=%s-%d offset=%d timestamp=%s\n",
+                    System.out.printf("Message %s sent successfully, topic-partition=%s-%d offset=%d timestamp=%s\n",
                             r.correlationMetadata(),
                             metadata.topic(),
                             metadata.partition(),

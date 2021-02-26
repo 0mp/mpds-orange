@@ -164,7 +164,8 @@ Get the Grafana URL to visit by running these commands in the same shell:
 Create clusterrolebinding on Kubernetes for Flink
 ```
 $ kubectl create clusterrolebinding flink-role-binding-default --clusterrole=edit --serviceaccount=default:default
-```
+```ls
+
 
 If you do not want to use the default service account, use the following command to create a new flink-service-account service account and set the role binding. 
 Then use the config option -Dkubernetes.service-account=flink-service-account to make the JobManager pod use the flink-service-account service account to create/delete TaskManager pods and leader ConfigMaps. 
@@ -314,5 +315,5 @@ To delete all resources created by Terraform, run:
 * Enable the APIs manually through the GCP console if required
 * Get cluster credentials without Terraform if required
 ```
-  gcloud container clusters get-credentials mpds-task-2-cluster --zone europe-west3-a
+  gcloud container clusters get-credentials mpds-task-orange-cluster --zone europe-west3-a
 ```

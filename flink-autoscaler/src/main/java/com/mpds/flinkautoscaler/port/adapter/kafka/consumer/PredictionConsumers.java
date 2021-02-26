@@ -1,0 +1,46 @@
+package com.mpds.flinkautoscaler.port.adapter.kafka.consumer;
+
+import com.mpds.flinkautoscaler.application.service.PredictionCacheService;
+import com.mpds.flinkautoscaler.domain.model.events.LongtermPredictionReported;
+import com.mpds.flinkautoscaler.domain.model.events.ShorttermPredictionReported;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.Message;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.util.function.Consumer;
+
+@Configuration
+@Slf4j
+@RequiredArgsConstructor
+public class PredictionConsumers {
+
+    private final PredictionCacheService predictionCacheService;
+
+    @Bean
+    public Consumer<Flux<Message<ShorttermPredictionReported>>> shortTermPrediction() {
+       return flux -> flux.flatMap(shortternPredictionReportedMessage -> {
+           ShorttermPredictionReported shorttermPredictionReported = shortternPredictionReportedMessage.getPayload();
+            log.debug("STP - Caching: {}", shorttermPredictionReported.toString());
+
+           this.predictionCacheService.cacheDomainEvent(shorttermPredictionReported);
+
+           return Mono.empty();
+       }).doOnError(Throwable::getMessage).subscribe();
+    }
+
+
+    @Bean
+    public Consumer<Flux<Message<LongtermPredictionReported>>> longTermPrediction() {
+        return flux -> flux.flatMap(longtermPredictionReportedMessage -> {
+            LongtermPredictionReported longtermPredictionReported = longtermPredictionReportedMessage.getPayload();
+            log.debug("LTP - Caching: {}", longtermPredictionReported.toString());
+
+            this.predictionCacheService.cacheDomainEvent(longtermPredictionReported);
+            return Mono.empty();
+        }).doOnError(Throwable::getMessage).subscribe();
+    }
+}

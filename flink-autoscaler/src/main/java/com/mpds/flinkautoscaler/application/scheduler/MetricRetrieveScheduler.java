@@ -101,8 +101,15 @@ public class MetricRetrieveScheduler {
                     cpu,
                     mem,
                     kafkaLag);
+//            PredictionReported domainEvent = new PredictionReported(
+//                    UUID.randomUUID().toString(),
+//                    LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC),
+//                    1,
+//                    LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC).toString(),
+//                    UUID.randomUUID().toString()
+//                    );
             log.info(domainEvent.toString());
-            this.rescaleManager.evaluate(domainEvent);
+//            this.rescaleManager.evaluate(domainEvent);
 
             return domainEvent;
         });
