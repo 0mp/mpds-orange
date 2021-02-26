@@ -14,7 +14,9 @@ on-premise, the Helm charts can be used to do the deployments of the application
 
 _Skip this section if there is already an existent Kubernetes Cluster_
 
-Run `make cluster-create`.
+Run `make cluster-create` to create a cluster.
+
+In order to destroy it, run `make cluster-destroy`.
 
 ### Troubleshooting
 
@@ -53,14 +55,33 @@ Deploy the charts with:
 helm install [DEPLOYMENT NAME] [CHART DIRECTORY]
 ```
 
-#### Additional notes
+#### Grafana: additional notes
 
 Get the Grafana URL to visit by running these commands in the same shell:
-  ```
-  NODE_PORT=$(kubectl get --namespace default -o jsonpath="{.spec.ports[0].nodePort}" services grafana)
-  NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="ExternalIP")].address}')
-  echo http://$NODE_IP:$NODE_PORT
-  ```
+
+```
+NODE_PORT=$(kubectl get --namespace default -o jsonpath="{.spec.ports[0].nodePort}" services grafana)
+NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="ExternalIP")].address}')
+echo http://$NODE_IP:$NODE_PORT
+```
+
+##### Viewing metrics in Grafana
+
+<p align="center">
+  <img width="460" height="300" src="images/grafana.png">
+</p>
+
+Grafana is accessible at <kubernetes_node_ip>:<nodeport>.
+The default nodeport is ``30080`` and the default username and password is ``admin``
+
+After logging into Grafana, the data source must be added.
+Navigate to: ``Configuration > Data Sources > Add data source > Prometheus``
+Set the Url to ``prometheus:9090`` and click save and test. You should see a green notification that the data source is working.
+
+To import the premade grafana dashboard to show metrics, navigate to:
+``Create > Import > Upload JSON file``
+Upload the ``grafana-dashboard.json`` file from the root directory.
+
 
 ### Deploying native Kubernetes Apache Flink manually
 
@@ -111,112 +132,17 @@ Submit the Flink job and start the application, e.g.:
 - Program Arguments: `--statebackend.default false --checkpoint hdfs://hadoop-hdfs-namenode:8020/flink/checkpoints --checkpoint.interval 300000`
 - Savepoint Path: `hdfs://hadoop-hdfs-namenode:8020/flink/savepoints/savepoint-040a83-73e0bac50483`
 
-Alternatively, Flink could be deployed in application mode
-```        
-./bin/flink run-application \
-    --target kubernetes-application \
-    -Dkubernetes.cluster-id=flink-cluster \
-    -Dkubernetes.container.image=eu.gcr.io/mpds-task-2/covid-engine:2.3.1 \
-    -Dkubernetes.container.image.pull-policy=Always \
-    -Dkubernetes.jobmanager.annotations=prometheus.io/scrape:'true',prometheus.io/port:'9999' \
-    -Dkubernetes.taskmanager.annotations=prometheus.io/scrape:'true',prometheus.io/port:'9999' \
-    -Dmetrics.latency.granularity=OPERATOR \
-    -Dmetrics.latency.interval=1000 \
-    -Dmetrics.reporters=prom \
-    -Dmetrics.reporter.prom.class=org.apache.flink.metrics.prometheus.PrometheusReporter \
-    -Dmetrics.reporter.prom.port=9999 \
-    -Dmetrics.reporter.jmx.class=org.apache.flink.metrics.jmx.JMXReporter \
-    -Dmetrics.reporter.jmx.port=8789 \
-    -Dstate.savepoints.dir=hdfs://hadoop-hdfs-namenode:8020/flink/savepoints \
-    local:///opt/flink/usrlib/covid-engine-2.3.1.jar \
-    --statebackend.default false \
-    --checkpoint hdfs://hadoop-hdfs-namenode:8020/flink/checkpoints \
-    --checkpoint.interval 300000    
-    
-    
-    // Start a Flink cluster from a specific savepoint
-    ./bin/flink run-application \
-    --target kubernetes-application \
-    --parallelism 3 \
-    --fromSavepoint hdfs://hadoop-hdfs-namenode:8020/flink/savepoints/savepoint-f856bd-8b076fb00f92/_metadata\
-    -Dkubernetes.cluster-id=flink-cluster \
-    -Dkubernetes.container.image=eu.gcr.io/mpds-task-2/covid-engine:2.3.1 \
-    -Dkubernetes.container.image.pull-policy=Always \
-    -Dkubernetes.jobmanager.annotations=prometheus.io/scrape:'true',prometheus.io/port:'9999' \
-    -Dkubernetes.taskmanager.annotations=prometheus.io/scrape:'true',prometheus.io/port:'9999' \
-    -Dmetrics.latency.granularity=OPERATOR \
-    -Dmetrics.latency.interval=1000 \
-    -Dmetrics.reporters=prom \
-    -Dmetrics.reporter.prom.class=org.apache.flink.metrics.prometheus.PrometheusReporter \
-    -Dmetrics.reporter.prom.port=9999 \
-    -Dmetrics.reporter.jmx.class=org.apache.flink.metrics.jmx.JMXReporter \
-    -Dmetrics.reporter.jmx.port=8789 \
-    -Dstate.savepoints.dir=hdfs://hadoop-hdfs-namenode:8020/flink/savepoints \
-    local:///opt/flink/usrlib/covid-engine-2.3.1.jar \
-    --statebackend.default false \
-    --checkpoint hdfs://hadoop-hdfs-namenode:8020/flink/checkpoints \
-    --checkpoint.interval 300000
-```
-Once the application cluster is deployed you can interact with it:
-```
-# List running job on the cluster
-$ ./bin/flink list --target kubernetes-application -Dkubernetes.cluster-id=flink-cluster
-# Cancel running job
-$ ./bin/flink cancel --target kubernetes-application -Dkubernetes.cluster-id=flink-cluster <jobId>  
-```
-_You can override configurations set in conf/flink-conf.yaml by passing key-value pairs -Dkey=value to bin/flink_
-
-Stops the Flink cluster if is not needed anymore, e.g.:
-```
-./bin/flink stop \
---target kubernetes-application \
--Dkubernetes.cluster-id=flink-cluster 7f41ed2c0a863ea5ddfa2c315416fceb
-```
-
-## Viewing metrics in Grafana
-
-<p align="center">
-  <img width="460" height="300" src="images/grafana.png">
-</p>
-
-Grafana is accessible at <kubernetes_node_ip>:<nodeport>.
-The default nodeport is ``30080`` and the default username and password is ``admin``
-
-After logging into Grafana, the data source must be added.
-Navigate to: ``Configuration > Data Sources > Add data source > Prometheus``
-Set the Url to ``prometheus:9090`` and click save and test. You should see a green notification that the data source is working.
-
-To import the premade grafana dashboard to show metrics, navigate to:
-``Create > Import > Upload JSON file``
-Upload the ``grafana-dashboard.json`` file from the root directory.
-
 ## Flink DSP Engine
 
 <p align="center">
   <img width="460" height="300" src="images/pipeline.jpg">
 </p>
 
-## Removal & Cleanup
-Manual Resource Cleanup for FLink
-```
-kubectl delete deployment/flink-cluster
-```
-
-Uninstall the charts with:
-```
-helm uninstall [DEPLOYMENT NAME]
-```
-
-To delete all resources created by Terraform, run:
-```
-terraform destroy
-```
-
 ## Troubleshooting
 * Sometimes the Terraform commands don't work immediately. In that case, repeat the Terraform commands mentioned above (see (see https://stackoverflow.com/questions/62106154/frequent-error-when-deploying-helm-to-gke-with-terraform))
 * Update the latest GKE stable version if errors are thrown related to that on the Terraform main.tf file
 * Enable the APIs manually through the GCP console if required
 * Get cluster credentials without Terraform if required
-```
+  ```
   gcloud container clusters get-credentials mpds-task-2-cluster --zone europe-west3-a
-```
+  ```
