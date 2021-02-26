@@ -5,6 +5,7 @@ import logging
 import json
 import numpy as np
 from datetime import datetime, timedelta
+import uuid
 
 """
 Short Term Predictor
@@ -48,7 +49,7 @@ Outgoing Data, 'st_prediction' topic example message:
 
 # Globalen Variablen
 LOAD_TOPIC = 'metric'
-PREDICTION_TOPIC = 'prediction'
+PREDICTION_TOPIC = 'prediction_st'
 REBUILD_TIME_MIN = 5
 REBUILD_TIME_SEC = REBUILD_TIME_MIN * 60
 REGRESSION_WINDOW_FACTOR = 12
@@ -79,7 +80,7 @@ def create_predictions():
         if len(OBSERVATION) > 3:
             curr_prediction = linear_regression[0] * (len(OBSERVATION)) + \
                                 linear_regression[1]
-            if np.square(curr_prediction - message.value['kafkaMessagesPerSeconds']) > 8 * MSE:
+            if np.square(curr_prediction - message.value['kafkaMessagesPerSecond']) > 8 * MSE:
                 spike_data.append(message.value)
                 if len(spike_data) > 3:
                     logging.warning('Spike Detected')
@@ -106,7 +107,7 @@ def create_predictions():
 
         
         # Calculate Regression
-        y = np.array([o['kafkaMessagesPerSeconds'] for o in OBSERVATION])
+        y = np.array([o['kafkaMessagesPerSecond'] for o in OBSERVATION])
         x = np.array([*range(len(OBSERVATION))])
         quadratic_regression = np.polyfit(x,y,2)
         linear_regression = np.polyfit(x,y,1)
@@ -130,8 +131,12 @@ def create_predictions():
         last_ob_time = datetime.strptime(OBSERVATION[-1]['occurredOn'],'%Y-%m-%dT%H:%M:%SZ')
         nextTime = last_ob_time + timedelta(minutes = REBUILD_TIME_MIN)
         producer.send(PREDICTION_TOPIC,
-            {'prediction':prediction,
-            'occurredOn': nextTime.strftime('%Y-%m-%dT%H:%M:%SZ')})
+            {'predictedWorkload':prediction,
+            'occurredOn': last_ob_time,
+            "eventTriggerUuid":OBSERVATION[-1]['uuid'],
+            "eventType":"PredictionReported",
+            "predictionBasedOnDateTime":nextTime.strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'uuid': str(uuid.uuid4())})
             
 
 
