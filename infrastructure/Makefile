@@ -1,26 +1,25 @@
-CHARTS_DIR=	k8s/helm/charts
+HELM_DIR=	k8s/helm
 PROJECT_NAME=	mpds-task-orange
 
 cluster-create:
 	./scripts/cluster-setup-accounts.sh
 	./scripts/cluster-setup-storage.sh
 	./scripts/cluster-terraform.sh
-	./scripts/hdfs-deploy.sh
+	${MAKE} flink-build-docker-image
+	${MAKE} flink-push-docker-image
 
 cluster-destroy:
 	cd k8s/terraform && terraform destroy
 
-helm-install: grafana-install kafka-install prometheus-install
-helm-uninstall: grafana-uninstall kafka-uninstall prometheus-uninstall
+services-install:
+	./scripts/hdfs-deploy.sh
+	cd ${HELM_DIR} && helm install mpds .
+	${MAKE} flink-deploy
 
-grafana-install kafka-install prometheus-install:
-	name="$$(echo "$@" | cut -d - -f 1)" && \
-	cd "${CHARTS_DIR}/$$name" && \
-	helm install "$$name" .
-
-grafana-uninstall kafka-uninstall prometheus-uninstall:
-	name="$$(echo "$@" | cut -d - -f 1)" && \
-	helm uninstall "$$name"
+services-uninstall:
+	-helm uninstall hdfs
+	-helm uninstall mpds
+	-${MAKE} flink-stop
 
 FLINK_DIR=	flink-1.12.1
 FLINK_TARBALL=	${FLINK_DIR}-bin-scala_2.12.tgz
