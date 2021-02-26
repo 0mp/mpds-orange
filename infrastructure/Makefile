@@ -33,10 +33,12 @@ ${FLINK_DIR}: ${FLINK_TARBALL}
 
 flink-fetch-dependencies: ${FLINK_DIR}
 
+# Build the Flink job Docker image.
 flink-build-docker-image:
 	cd docker/flink && \
 	docker build -t ${FLINK_DOCKER_IMAGE_COVID_ENGINE} .
 
+# Push the created image to the Container Registry.
 flink-push-docker-image:
 	gcloud auth configure-docker
 	cd docker/flink && \
