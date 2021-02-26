@@ -25,16 +25,15 @@ class KafkaConsumerThread(Thread):
         self.window = np.empty((window_len), dtype=np.double)
         self.timestamp = None
         self.consumer = KafkaConsumer(topic,
-                                 bootstrap_servers = ip,
-                                 value_deserializer = lambda m: json.loads(m.decode('ascii')))
+                                      bootstrap_servers = ip,
+                                      value_deserializer = lambda m: json.loads(m.decode('ascii')))
         Thread.__init__(self, daemon=True)
         
     def run(self):
-
+        print("running subscriber thread")
         i_buff = 0
         
         for msg in self.consumer:
-            
             # Average buffer
             self.window[i_buff] = msg.value["kafkaMessagesPerSecond"]
             
@@ -76,11 +75,10 @@ class KafkaPredictionProducer():
     
     def send_predictions(self, pred, time):
         t = isoparse(time)
-        out = {"predictedWorkload" : [p.item() for p in pred],
-               "predictionForDateTime" :
-               [(t+datetime.timedelta(seconds=i*self.interval))
-                .replace(tzinfo=datetime.timezone.utc).isoformat()
-                for i in range(1,pred.shape[0]+1)],
+        out = {"predictedWorkloads" : [{"value" : p.item(),
+                                        "dateTime": (t+datetime.timedelta(seconds=(i+1)*self.interval))
+                                        .replace(tzinfo=datetime.timezone.utc).isoformat()}
+                                       for i, p in enumerate(pred)],
                "predictionBasedOnDateTime" : time,
                "UUID" : str(uuid.uuid4()),
                "occurredOn" :

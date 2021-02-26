@@ -26,7 +26,7 @@ def get_producer(ip, batch_size=1):
                              batch_size = 0
                             )
         
-def sim_traffic(func, ip, topic="statistics", interval = 200, amount = 1000):
+def sim_traffic(func, ip, topic="metric", interval = 200, amount = 1000):
     
     producer = get_producer(ip)
     
@@ -35,7 +35,7 @@ def sim_traffic(func, ip, topic="statistics", interval = 200, amount = 1000):
         record = {"occurredOn" : datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).isoformat(),
                   "kafkaMessagesPerSecond" : func(x)
                  }
-        
-        producer.send("statistics", record)
+        #print(f"send {x}")
+        producer.send(topic, record)
         
         time.sleep(interval/1000)
