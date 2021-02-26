@@ -41,8 +41,12 @@ Incoming Data, 'metric' topic kafka example:
 
 Outgoing Data, 'st_prediction' topic example message:
 {
-    "prediction": 0.006446247827380952,
-    "occurredOn": "2021-02-21T17:25:51Z"
+    "occurredOn": timestamp of last observation
+    "predictedWorkload":prediction
+    "eventTriggerUuid": uuid of the last observation
+    "eventType":"PredictionReported",
+    "predictionBasedOnDateTime": timestamp of the predicted workload
+    'uuid': event uuid           
 }
 """
 
@@ -50,12 +54,12 @@ Outgoing Data, 'st_prediction' topic example message:
 # Globalen Variablen
 LOAD_TOPIC = 'metric'
 PREDICTION_TOPIC = 'prediction_st'
-REBUILD_TIME_MIN = 5
+REBUILD_TIME_MIN = 2
 REBUILD_TIME_SEC = REBUILD_TIME_MIN * 60
 REGRESSION_WINDOW_FACTOR = 12
 REGRESSION_WINDOW_MIN = REBUILD_TIME_MIN * REGRESSION_WINDOW_FACTOR
 REGRESSION_WINDOW_SEC = REGRESSION_WINDOW_MIN * 60
-SPIKE_WINDOW_MIN = 3 #minutes
+SPIKE_WINDOW_MIN = 1 #minutes
 
 
 def create_predictions():
@@ -65,7 +69,7 @@ def create_predictions():
                          auto_offset_reset='earliest', 
                          enable_auto_commit=False,
                          value_deserializer=lambda m: json.loads(m.decode('ascii')),
-                         consumer_timeout_ms=30000)
+                         consumer_timeout_ms=60000)
     producer = KafkaProducer(bootstrap_servers=['localhost:9092'],
                         value_serializer=lambda v: json.dumps(v).encode('utf-8'))
 
@@ -82,7 +86,7 @@ def create_predictions():
                                 linear_regression[1]
             if np.square(curr_prediction - message.value['kafkaMessagesPerSecond']) > 8 * MSE:
                 spike_data.append(message.value)
-                if len(spike_data) > 3:
+                if len(spike_data) > 6:
                     logging.warning('Spike Detected')
                     OBSERVATION = spike_data
                     spike_data = []
@@ -113,7 +117,7 @@ def create_predictions():
         linear_regression = np.polyfit(x,y,1)
 
         # Calculate future x for prediction
-        future_x = len(OBSERVATION) + REBUILD_TIME_MIN
+        future_x = len(OBSERVATION) + REBUILD_TIME_MIN * 6
 
         # Calculate MSE for spike detection
         MSE = np.square(np.subtract(y,np.polyval(linear_regression,x))).mean() 
