@@ -80,7 +80,7 @@ $ kubectl create clusterrolebinding flink-role-binding-default --clusterrole=edi
 ```
 
 If you do not want to use the default service account, use the following command to create a new flink-service-account service account and set the role binding. 
-Then use the config option -Dkubernetes.service-account=flink-service-account to make the JobManager pod use the flink-service-account service account to create/delete TaskManager pods and leader ConfigMaps. 
+Then use the config option `-Dkubernetes.service-account=flink-service-account` to make the JobManager pod use the flink-service-account service account to create/delete TaskManager pods and leader ConfigMaps. 
 Also this will allow the TaskManager to watch leader ConfigMaps to retrieve the address of JobManager and ResourceManager.
 ```
 $ kubectl create serviceaccount flink-service-account
