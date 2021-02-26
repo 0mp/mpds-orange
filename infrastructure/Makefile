@@ -7,6 +7,9 @@ cluster-create:
 	./scripts/cluster-terraform.sh
 	./scripts/hdfs-deploy.sh
 
+cluster-destroy:
+	cd k8s/terraform && terraform destroy
+
 helm-install: grafana-install kafka-install prometheus-install
 helm-uninstall: grafana-uninstall kafka-uninstall prometheus-uninstall
 
