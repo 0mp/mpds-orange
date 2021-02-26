@@ -9,27 +9,12 @@ on-premise, the Helm charts can be used to do the deployments of the application
 * Install Terraform (see https://learn.hashicorp.com/tutorials/terraform/install-cli?in=terraform/gcp-get-started)
 * Install the gcloud sdk (see https://cloud.google.com/sdk) in case the gcp commands are executed from the local machine
   instead of using Google Cloud Shell
-* Download the Flink package to get the cli and extract it: 
-  ```
-  make flink-fetch-dependencies
-  ```
-  
-## Building the artifacts
-* Build the Flink Docker image:
-  ```
-  make flink-build-docker-image
-  ```
 
-* Push the created image to the Container Registry
-  ```
-  make flink-push-docker-image
-  ```
-
-## Setup GKE cluster
+## GKE cluster setup
 
 _Skip this section if there is already an existent Kubernetes Cluster_
 
-* Run `make cluster-create`.
+Run `make cluster-create`.
 
 ### Troubleshooting
 
@@ -52,25 +37,23 @@ _Skip this section if there is already an existent Kubernetes Cluster_
 
 ## Deploying the applications
 
+Simply, run `make services-install`.
+
 ### Deploying Hadoop for HDFS
 
 Run `./scripts/hdfs-deploy.sh`.
 
-### Deploying Kafka, Prometheus, Grafana
+### Deploying Kafka, Prometheus, Grafana, and Redis
 
-#### Quick start
-
-Run `make helm-install`.
-
-#### Manual installation with Helm
-
-Kafka, Prometheus, and Grafana can be deployed on a Kubernetes cluster using the Helm charts located in the `infrastructure/k8s/helm` directory. Configure which charts to deploy in the global values.yaml by setting enabled: true for each desired technology. Cluster sizes and ports for external access can also be specified here.
+Kafka, Prometheus, Redis, and Grafana can be deployed on a Kubernetes cluster using the Helm charts located in the `infrastructure/k8s/helm` directory. Configure which charts to deploy in the global values.yaml by setting enabled: true for each desired technology. Cluster sizes and ports for external access can also be specified here.
 Each subchart can be deployed by itself and contains its own values.yaml file with futher configurations. If deployed from the umbrella chart, values in the global values.yaml will overwrite the values in the subchart's values.yaml.
 
 Deploy the charts with:
 ```
 helm install [DEPLOYMENT NAME] [CHART DIRECTORY]
 ```
+
+#### Additional notes
 
 Get the Grafana URL to visit by running these commands in the same shell:
   ```
@@ -79,14 +62,7 @@ Get the Grafana URL to visit by running these commands in the same shell:
   echo http://$NODE_IP:$NODE_PORT
   ```
 
-### Deploying native Kubernetes Apache Flink 
-
-#### Quick start
-
-* Run `make flink-deploy` to start the Flink cluster.
-* Run `make flink-stop` to stop the Flink cluster.
-
-#### Manual setup
+### Deploying native Kubernetes Apache Flink manually
 
 Create clusterrolebinding on Kubernetes for Flink
 ```
@@ -122,18 +98,18 @@ A Flink native Kubernetes cluster in session mode could be deployed like this:
 ```
 
 Get the Flink Web UI URL:
-  ```
-  NODE_PORT=$(kubectl get --namespace default -o jsonpath="{.spec.ports[0].nodePort}" services flink-cluster-rest)
-  NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="ExternalIP")].address}')
-  echo http://$NODE_IP:$NODE_PORT
-  ````
+
+```
+NODE_PORT=$(kubectl get --namespace default -o jsonpath="{.spec.ports[0].nodePort}" services flink-cluster-rest)
+NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="ExternalIP")].address}')
+echo http://$NODE_IP:$NODE_PORT
+````
 
 Submit the Flink job and start the application, e.g.:
 
 - Parallelism: `1`
 - Program Arguments: `--statebackend.default false --checkpoint hdfs://hadoop-hdfs-namenode:8020/flink/checkpoints --checkpoint.interval 300000`
 - Savepoint Path: `hdfs://hadoop-hdfs-namenode:8020/flink/savepoints/savepoint-040a83-73e0bac50483`
-
 
 Alternatively, Flink could be deployed in application mode
 ```        
