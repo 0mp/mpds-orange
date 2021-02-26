@@ -53,7 +53,7 @@ Outgoing Data, 'st_prediction' topic example message:
 
 # Globalen Variablen
 LOAD_TOPIC = 'metric'
-PREDICTION_TOPIC = 'prediction_st'
+PREDICTION_TOPIC = 'short-term-predictions'
 REBUILD_TIME_MIN = 2
 REBUILD_TIME_SEC = REBUILD_TIME_MIN * 60
 REGRESSION_WINDOW_FACTOR = 12
@@ -65,12 +65,12 @@ SPIKE_WINDOW_MIN = 1 #minutes
 def create_predictions():
     logging.info('Create Predictions')
     consumer =  KafkaConsumer(LOAD_TOPIC,
-                         bootstrap_servers=['localhost:9092'],
+                         bootstrap_servers=['35.246.173.215:31090'],
                          auto_offset_reset='earliest', 
                          enable_auto_commit=False,
                          value_deserializer=lambda m: json.loads(m.decode('ascii')),
                          consumer_timeout_ms=60000)
-    producer = KafkaProducer(bootstrap_servers=['localhost:9092'],
+    producer = KafkaProducer(bootstrap_servers=['35.246.173.215:31090'],
                         value_serializer=lambda v: json.dumps(v).encode('utf-8'))
 
     OBSERVATION = []
@@ -106,12 +106,14 @@ def create_predictions():
 
         # Truncate Observations based on time window
         curr_time = datetime.strptime(message.value['occurredOn'],'%Y-%m-%dT%H:%M:%SZ')
-        while abs((curr_time - datetime.strptime(OBSERVATION[0]['occurredOn'],'%Y-%m-%dT%H:%M:%SZ')).seconds) > REGRESSION_WINDOW_SEC :
+        while abs((curr_time - datetime.strptime(OBSERVATION[0]['occurredOn'],'%Y-%m-%dT%H:%M:%SZ')).seconds) > REGRESSION_WINDOW_SEC and len(OBSERVATION) > 3:
+                logging.info("Pop observation, too old")
                 OBSERVATION.pop(0)
 
         
         # Calculate Regression
         y = np.array([o['kafkaMessagesPerSecond'] for o in OBSERVATION])
+        
         x = np.array([*range(len(OBSERVATION))])
         quadratic_regression = np.polyfit(x,y,2)
         linear_regression = np.polyfit(x,y,1)
@@ -136,9 +138,9 @@ def create_predictions():
         nextTime = last_ob_time + timedelta(minutes = REBUILD_TIME_MIN)
         producer.send(PREDICTION_TOPIC,
             {'predictedWorkload':prediction,
-            'occurredOn': last_ob_time,
+            'occurredOn': last_ob_time.strftime('%Y-%m-%dT%H:%M:%SZ'),
             "eventTriggerUuid":OBSERVATION[-1]['uuid'],
-            "eventType":"PredictionReported",
+            "eventType":"ShorttermPredictionReported",
             "predictionBasedOnDateTime":nextTime.strftime('%Y-%m-%dT%H:%M:%SZ'),
             'uuid': str(uuid.uuid4())})
             
