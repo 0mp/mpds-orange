@@ -81,6 +81,13 @@ Get the Grafana URL to visit by running these commands in the same shell:
 
 ### Deploying native Kubernetes Apache Flink 
 
+#### Quick start
+
+* Run `make flink-deploy` to start the Flink cluster.
+* Run `make flink-stop` to stop the Flink cluster.
+
+#### Manual setup
+
 Create clusterrolebinding on Kubernetes for Flink
 ```
 $ kubectl create clusterrolebinding flink-role-binding-default --clusterrole=edit --serviceaccount=default:default
@@ -94,7 +101,7 @@ $ kubectl create serviceaccount flink-service-account
 $ kubectl create clusterrolebinding flink-role-binding-flink --clusterrole=edit --serviceaccount=default:flink-service-account
 ```
 
-#### Deploy the Flink cluster using the cli from the downloaded Flink package
+##### Deploy the Flink cluster using the cli from the downloaded Flink package
 A Flink native Kubernetes cluster in session mode could be deployed like this:
 ```
 ./bin/kubernetes-session.sh \
