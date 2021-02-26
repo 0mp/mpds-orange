@@ -19,6 +19,7 @@ def set_up_train():
     iters = 0
     
 def wait_for_fill(kafka, train_buff = 100):
+    print("wait for data to build up")
     while(not kafka.filled_more_than(SEQ_LEN + PRED_LEN + CFG.train.buffer)):
         time.sleep(0.5)
 
@@ -27,11 +28,11 @@ def wait_for_new(kafka, old):
         time.sleep(0.2)
         
 def find_max_train_iter(kafka, model):
-
+    print("find max training iterations")
     train_iter = kafka.pointer - (SEQ_LEN + PRED_LEN) + 1
 
     with kafka.lock:
-        hist, i, _ = kafka.get_current()
+        hist, i, _, _ = kafka.get_current()
         opt = optim.AdamW(model.parameters())
         crit = nn.MSELoss()
         total_dur = 0
@@ -70,7 +71,7 @@ def run(model, train_iter, kafka):
     while(True):
         
         with kafka.lock:
-            hist, i, time = kafka.get_current()
+            hist, i, time, msg_uuid = kafka.get_current()
             
             if i < train_iter + SEQ_LEN + PRED_LEN:
                 tensor_in, _max, _min = normalize_input(hist[0:i])
@@ -105,7 +106,7 @@ def run(model, train_iter, kafka):
                                           range(SEQ_LEN, SEQ_LEN + PRED_LEN),
                                           smooth=0.8)
         
-        producer.send_predictions(spline_smooth, time)
+        producer.send_predictions(spline_smooth, time, msg_uuid)
         wait_for_new(kafka, i)
     
 

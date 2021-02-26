@@ -24,6 +24,7 @@ class KafkaConsumerThread(Thread):
         self.pointer = 0
         self.window = np.empty((window_len), dtype=np.double)
         self.timestamp = None
+        self.msg_uuid = None
         self.consumer = KafkaConsumer(topic,
                                       bootstrap_servers = ip,
                                       value_deserializer = lambda m: json.loads(m.decode('ascii')))
@@ -43,6 +44,7 @@ class KafkaConsumerThread(Thread):
                 with self.lock:
                     self.hist[0,self.pointer] = self.hist[1,(self.pointer + self.hist2_ahead) % self.arr_len] = np.mean(self.window, 0)
                     self.timestamp = msg.value["occurredOn"]
+                    self.msg_uuid = msg.value["uuid"]
 
                 i_buff = 0
                 self.pointer += 1
@@ -56,7 +58,7 @@ class KafkaConsumerThread(Thread):
                     
     def get_current(self):
         if self.curr_hist1:
-            return self.hist[0], self.pointer, self.timestamp
+            return self.hist[0], self.pointer, self.timestamp, self.msg_uuid
         else:
             return self.hist[1], (self.pointer + self.hist2_ahead) % self.arr_len, self.timestamp
         
@@ -73,17 +75,18 @@ class KafkaPredictionProducer():
         self.topic = topic
         self.interval = interval
     
-    def send_predictions(self, pred, time):
+    def send_predictions(self, pred, time, msg_uuid):
         t = isoparse(time)
         out = {"predictedWorkloads" : [{"value" : p.item(),
                                         "dateTime": (t+datetime.timedelta(seconds=(i+1)*self.interval))
-                                        .replace(tzinfo=datetime.timezone.utc).isoformat()}
+                                        .strftime('%Y-%m-%dT%H:%M:%SZ')}
                                        for i, p in enumerate(pred)],
                "predictionBasedOnDateTime" : time,
-               "UUID" : str(uuid.uuid4()),
+               "eventTriggerUuid" : msg_uuid,
+               "uuid" : str(uuid.uuid4()),
                "occurredOn" :
                datetime.datetime.utcnow()
-               .replace(tzinfo=datetime.timezone.utc).isoformat(),
+               .strftime('%Y-%m-%dT%H:%M:%SZ'),
                "eventType" : "LongtermPredictionReported"}
         
         print(out)
