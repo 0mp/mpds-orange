@@ -11,19 +11,19 @@ on-premise, the Helm charts can be used to do the deployments of the application
   instead of using Google Cloud Shell
 * Download the Flink package to get the cli and extract it: 
   ```
-  wget https://downloads.apache.org/flink/flink-1.12.1/flink-1.12.1-bin-scala_2.12.tgz 
-  tar -xf flink-1.12.1-bin-scala_2.12.tgz
+  make flink-fetch-dependencies
   ```
   
 ## Building the artifacts
-* Build the Flink Docker image using the files under /infrastructure/docker/flink from the project root path
-```
-docker build -t eu.gcr.io/mpds-task-2/covid-engine:2.3.0 .
-```
+* Build the Flink Docker image:
+  ```
+  make flink-build-docker-image
+  ```
+
 * Push the created image to the Container Registry
-```
-docker push eu.gcr.io/mpds-task-2/covid-engine:2.3.0
-```
+  ```
+  make flink-push-docker-image
+  ```
 
 ## Setup GKE cluster
 
