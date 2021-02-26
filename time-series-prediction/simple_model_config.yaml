@@ -1,0 +1,19 @@
+kafka:
+    ip: 35.246.173.215:31090
+    in_topic: metric 
+    out_topic: long-term-predictions
+    input_interval: 10
+    avg_agg_len: 1
+    expected_period: 100
+    self_simulate: False
+model:
+    seq_len: 16
+    pred_len: 4
+    cell: GRU
+    hidden_dim: 16
+    stack: 3
+train:
+    time: 1
+    buffer: 3
+    LR: 0.001
+    pretrain_iters: 100

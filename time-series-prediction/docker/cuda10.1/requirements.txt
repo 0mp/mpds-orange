@@ -18,5 +18,6 @@ torchtext
 scipy
 sklearn
 sktime>=0.5.1
+omegaconf
 hydra-core>=1.0.4
 munch
