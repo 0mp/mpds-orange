@@ -21,7 +21,7 @@ grafana-uninstall kafka-uninstall prometheus-uninstall:
 
 FLINK_DIR=	flink-1.12.1
 FLINK_TARBALL=	${FLINK_DIR}-bin-scala_2.12.tgz
-FLINK_DOCKER_IMAGE_COVID_ENGINE=	covid-engine:2.3.1
+FLINK_DOCKER_IMAGE_COVID_ENGINE=	eu.gcr.io/${PROJECT_NAME}/covid-engine:2.3.1
 
 ${FLINK_TARBALL}:
 	wget -O "$@" "https://downloads.apache.org/flink/flink-1.12.1/$@"
@@ -33,12 +33,12 @@ flink-fetch-dependencies: ${FLINK_DIR}
 
 flink-build-docker-image:
 	cd docker/flink && \
-	docker build -t eu.gcr.io/${PROJECT_NAME}/${FLINK_DOCKER_IMAGE_COVID_ENGINE} .
+	docker build -t ${FLINK_DOCKER_IMAGE_COVID_ENGINE} .
 
 flink-push-docker-image:
 	gcloud auth configure-docker
 	cd docker/flink && \
-	docker push eu.gcr.io/${PROJECT_NAME}/${FLINK_DOCKER_IMAGE_COVID_ENGINE}
+	docker push ${FLINK_DOCKER_IMAGE_COVID_ENGINE}
 
 flink-deploy: ${FLINK_DIR}
 	export FLINK_DIR="${FLINK_DIR}" && \
