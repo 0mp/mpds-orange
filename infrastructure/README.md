@@ -107,11 +107,11 @@ NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="
 echo http://$NODE_IP:$NODE_PORT
 ````
 
-Submit the Flink job to the cluster:
+Submit the Flink job and start the application, e.g.:
 
-```
-make flink-run-job
-```
+- Parallelism: `1`
+- Program Arguments: `--statebackend.default false --checkpoint hdfs://hadoop-hdfs-namenode:8020/flink/checkpoints --checkpoint.interval 300000`
+- Savepoint Path: `hdfs://hadoop-hdfs-namenode:8020/flink/savepoints/savepoint-040a83-73e0bac50483`
 
 ## Flink DSP Engine
 
