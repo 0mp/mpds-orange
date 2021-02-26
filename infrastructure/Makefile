@@ -17,7 +17,7 @@ services-install:
 	${MAKE} flink-deploy
 
 services-uninstall:
-	-helm uninstall hdfs
+	-helm uninstall hadoop
 	-helm uninstall mpds
 	-${MAKE} flink-stop
 
