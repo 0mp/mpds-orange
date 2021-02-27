@@ -77,7 +77,7 @@ public class DomainEventServiceImpl implements DomainEventService {
 
         // 2. Carry out action by using the WebClient to trigger rescaling
         // Target parallelism which has been calculated from previous step (TO BE DONE)
-        int targetParallelism = 2;
+        int targetParallelism = 3;
         boolean rescale = false;
         log.info("<<-- Start triggering Flink rescale  -->>");
         log.info("TargetParallelism: " + targetParallelism);
@@ -89,6 +89,7 @@ public class DomainEventServiceImpl implements DomainEventService {
 
 
         log.info("Evaluate");
+        // Scale Up
         if (metricReported.getKafkaLag() > metricReported.getKafkaMessagesPerSecond() *2 ||
                 metricReported.getCpuUtilization() > 0.6 ||
                 metricReported.getMemoryUsage() > 0.9 ||
@@ -96,10 +97,11 @@ public class DomainEventServiceImpl implements DomainEventService {
             log.info("Scale Up, Get higher parallelism for predicted load : " + shortTermPrediction.toString() );
 
             //TODO: request from performance table parallelism for predicted load
+            targetParallelism = 3; // Response from DB
+            rescale = false; // Should be true, left false for testing
 
-            rescale = false;
-            // Scale Up
         }
+        // Scale Down
         if (metricReported.getKafkaLag() < metricReported.getKafkaMessagesPerSecond()  &&
                 metricReported.getCpuUtilization() < 0.4 &&
                 metricReported.getMemoryUsage() < 0.5 &&
@@ -107,9 +109,9 @@ public class DomainEventServiceImpl implements DomainEventService {
             log.info("Scale Down, Get lower parallelism for predicted load :" + shortTermPrediction.toString());
 
             //TODO: request from performance table parallelism for predicted load
+            targetParallelism = 3; // Response from DB
+            rescale = false; // Should be true, left false for testing
 
-            rescale = false;
-            // Scale Down
         }
 
         if(rescale) {
