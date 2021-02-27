@@ -78,6 +78,7 @@ public class DomainEventServiceImpl implements DomainEventService {
         // 2. Carry out action by using the WebClient to trigger rescaling
         // Target parallelism which has been calculated from previous step (TO BE DONE)
         int targetParallelism = 2;
+        boolean rescale = false;
         log.info("<<-- Start triggering Flink rescale  -->>");
         log.info("TargetParallelism: " + targetParallelism);
 
@@ -85,7 +86,33 @@ public class DomainEventServiceImpl implements DomainEventService {
         // Use Postman to get the new values if required
         // 2.1 Create Savepoint for the job
         // TODO: Condition should be adjusted
-        if(metricReported.getSinkHealthy() && metricReported.getCpuUtilization() == 100.0f) {
+
+
+        log.info("Evaluate");
+        if (metricReported.getKafkaLag() > metricReported.getKafkaMessagesPerSecond() *2 ||
+                metricReported.getCpuUtilization() > 0.6 ||
+                metricReported.getMemoryUsage() > 0.9 ||
+                metricReported.getMaxJobLatency() > 500) {
+            log.info("Scale Up, Get higher parallelism for predicted load : " + shortTermPrediction.toString() );
+
+            //TODO: request from performance table parallelism for predicted load
+
+            rescale = false;
+            // Scale Up
+        }
+        if (metricReported.getKafkaLag() < metricReported.getKafkaMessagesPerSecond()  &&
+                metricReported.getCpuUtilization() < 0.4 &&
+                metricReported.getMemoryUsage() < 0.5 &&
+                metricReported.getMaxJobLatency() < 100) {
+            log.info("Scale Down, Get lower parallelism for predicted load :" + shortTermPrediction.toString());
+
+            //TODO: request from performance table parallelism for predicted load
+
+            rescale = false;
+            // Scale Down
+        }
+
+        if(rescale) {
             return this.createFlinkSavepoint(this.flinkProps.getJobId(), this.flinkProps.getSavepointDirectory(), true)
                     // 2.2 Get savepoint path using the received request id
                     // Wait with the request for 10 seconds so that the savepoint can complete
