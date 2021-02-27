@@ -59,20 +59,40 @@ public class DomainEventServiceImpl implements DomainEventService {
 //                .flatMap(clusterPerformanceBenchmark -> {
 //                    // TODO
 //                })
+        double ltChoice = metricReported.getKafkaMessagesPerSecond();
         LongtermPredictionReported longTermPrediction = (LongtermPredictionReported) this.predictionCacheService.getPredictionFrom(PredictionConstants.LONG_TERM_PREDICTION_EVENT_NAME);
         if(longTermPrediction!=null) {
             log.info("Current LT prediction: "+ longTermPrediction.toString());
+            double ltChoiceTemp = longTermPrediction.getPredictedWorkloads().stream().mapToInt(predictedWorkload -> (int) predictedWorkload.getValue()).average().orElse(0);
+            if (ltChoiceTemp < metricReported.getKafkaMessagesPerSecond() * 2 &&
+                    ltChoiceTemp > metricReported.getKafkaMessagesPerSecond() /2)   {
+                log.info("LT prediction in bounds");
+                ltChoice = ltChoiceTemp;
+            }
         } else {
             log.info("No LT prediction found in cache!");
         }
 
         ShorttermPredictionReported shortTermPrediction = (ShorttermPredictionReported) this.predictionCacheService.getPredictionFrom(PredictionConstants.SHORT_TERM_PREDICTION_EVENT_NAME);
 
+        float stChoice = metricReported.getKafkaMessagesPerSecond();
         if(shortTermPrediction!=null) {
             log.info("Current ST prediction: "+ shortTermPrediction.toString());
+            if (shortTermPrediction.getPredictedWorkload() < metricReported.getKafkaMessagesPerSecond() * 2 &&
+                    shortTermPrediction.getPredictedWorkload() > metricReported.getKafkaMessagesPerSecond() /2)   {
+                log.info("ST prediction in bounds");
+                stChoice = shortTermPrediction.getPredictedWorkload();
+            }
         } else {
             log.info("No ST prediction found in cache!");
         }
+
+
+        // Determine Weight prefence of prediction models
+        log.info("Aggregate Predictions");
+        float aggregatePrediction = (stChoice + (float) ltChoice) / 2;
+
+
 
 
         // 2. Carry out action by using the WebClient to trigger rescaling
@@ -88,16 +108,14 @@ public class DomainEventServiceImpl implements DomainEventService {
         // TODO: Condition should be adjusted
 
 
-        log.info("Evaluate");
+        log.info("Evaluate Metrics");
         // Scale Up
         if (metricReported.getKafkaLag() > metricReported.getKafkaMessagesPerSecond() *2 ||
                 metricReported.getCpuUtilization() > 0.6 ||
                 metricReported.getMemoryUsage() > 0.9 ||
                 metricReported.getMaxJobLatency() > 500) {
-            log.info("Scale Up, Get higher parallelism for predicted load : " + shortTermPrediction.toString() );
-
-            //TODO: request from performance table parallelism for predicted load
-            targetParallelism = 3; // Response from DB
+            log.info("Scale Up, Get higher parallelism for predicted load : " + aggregatePrediction );
+            targetParallelism = getTargetParallelism(metricReported, aggregatePrediction, true); // Response from DB
             rescale = false; // Should be true, left false for testing
 
         }
@@ -106,15 +124,16 @@ public class DomainEventServiceImpl implements DomainEventService {
                 metricReported.getCpuUtilization() < 0.4 &&
                 metricReported.getMemoryUsage() < 0.5 &&
                 metricReported.getMaxJobLatency() < 100) {
-            log.info("Scale Down, Get lower parallelism for predicted load :" + shortTermPrediction.toString());
+            log.info("Scale Down, Get lower parallelism for predicted load :" + aggregatePrediction);
 
             //TODO: request from performance table parallelism for predicted load
-            targetParallelism = 3; // Response from DB
+            targetParallelism = getTargetParallelism(metricReported, aggregatePrediction, false); // Response from DB
             rescale = false; // Should be true, left false for testing
 
         }
 
         if(rescale) {
+            int finalTargetParallelism = targetParallelism;
             return this.createFlinkSavepoint(this.flinkProps.getJobId(), this.flinkProps.getSavepointDirectory(), true)
                     // 2.2 Get savepoint path using the received request id
                     // Wait with the request for 10 seconds so that the savepoint can complete
@@ -126,7 +145,7 @@ public class DomainEventServiceImpl implements DomainEventService {
                     // 2.3 Start the job with the new parallelism using the savepoint path created from before
                     .flatMap(flinkSavepointInfoResponse -> {
                         log.info("flinkSavepointInfoResponse: " + flinkSavepointInfoResponse.toString());
-                        return runFlinkJob(this.flinkProps.getJarId(), this.flinkProps.getJobId(), this.flinkProps.getProgramArgs(), targetParallelism, flinkSavepointInfoResponse.getOperation().getLocation());
+                        return runFlinkJob(this.flinkProps.getJarId(), this.flinkProps.getJobId(), this.flinkProps.getProgramArgs(), finalTargetParallelism, flinkSavepointInfoResponse.getOperation().getLocation());
                     })
                     .flatMap(flinkRunJobResponse -> {
                         log.info("The job has been started successfully: " + flinkRunJobResponse.toString());
@@ -143,6 +162,31 @@ public class DomainEventServiceImpl implements DomainEventService {
         //        ClusterPerformanceBenchmark clusterPerformanceBenchmark = new ClusterPerformanceBenchmark();
         //        Set all the data and save to db
         //        this.clusterPerformanceBenchmarkRepository.save(clusterPerformanceBenchmark);
+    }
+
+    public int getTargetParallelism(MetricReported metricReported, float aggregatePrediction, boolean ScaleUp) {
+
+        //TODO: request from performance table parallelism for predicted load
+        // above = SELECT TOP (1) FROM mytable WHERE MaxLoad < aggregatePrediction ORDER BY MaxLoad DESC
+        // above = SELECT TOP (1) FROM mytable WHERE MaxLoad > aggregatePrediction ORDER BY MaxLoad ASC
+
+        int currentParallel = 3;
+        int above =3; // Return Value from DB
+        int newParallel= (int) (currentParallel / metricReported.getKafkaMessagesPerSecond() * aggregatePrediction);
+
+        /**
+         * Logic notes to consider:
+         *  Above will never be smaller than 1, in fact entry 1 will always be present in DB assuming we start with parallelism 1
+         *  The new parallel value will only be 10 greater than the current parrallel when the current parallel is 10. 
+         */
+
+        if ( above > currentParallel && ScaleUp) {
+            newParallel = above;
+        }
+        if ( above < currentParallel && !ScaleUp) {
+            newParallel = above;
+        }
+        return newParallel;
     }
 
     public Mono<FlinkSavepointInfoResponse> getFlinkSavepointInfo(String jobId, String triggerId) {
