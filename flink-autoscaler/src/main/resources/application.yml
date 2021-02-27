@@ -28,25 +28,46 @@ r2dbc:
 # Kafka config
 kafka:
   bootstrap-server: localhost:9092
+#  bootstrap-server: 35.198.125.206:31090
+  st-prediction-topic: st-prediction
+  lt-prediction-topic: lt-prediction
   topic: metric
   client-id-config: flink-autoscaler
   acks-config: all
 metrics-server:
   prometheus:
-    base-url: http://34.107.94.158:30090
-    query-path: /api/v1/query
-
+    base-url: http://35.198.125.206:30090
+    source-topic: covid
+autoscaler:
+  flink:
+    base-url: http://35.246.152.162:8081
+    job-id: 4aed8fef141155b5eb882068e2303243
+    jar-id: d4fdaac8-00df-4d8b-b351-ec5ce6cf0c1c_covid-engine-2.3.1.jar
+    program-args: --statebackend.default false --checkpoint hdfs://hadoop-hdfs-namenode:8020/flink/checkpoints --checkpoint.interval 300000
+    savepoint-directory: hdfs://hadoop-hdfs-namenode:8020/flink/savepoints
 spring:
   cloud:
     stream:
       function:
+        definition: metrics;shortTermPredictions;longTermPredictions
         bindings:
-          prediction-in-0: input
+          metrics-in-0: prometheus-metrics
+          shortTermPredictions-in-0: short-term-predictions
+          longTermPredictions-in-0: long-term-predictions
       kafka:
         binder:
-          brokers: localhost
+#          brokers: 35.198.125.206:31090
+          brokers: localhost:9092
       bindings:
-        input:
-          destination: prediction
-          group: flink-autoscaler
+        prometheus-metrics:
+          destination: metric
+          group: autoscaling-group
+          content-type: application/json
+        short-term-predictions:
+          destination: short-term-predictions
+          group: st-autoscaling-group
+          content-type: application/json
+        long-term-predictions:
+          destination: long-term-predictions
+          group: lt-autoscaling-group
           content-type: application/json

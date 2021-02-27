@@ -48,7 +48,7 @@ public class DomainEventPublisherReactive {
     }
 
     public Mono<Void> sendMessages(DomainEvent domainEvent) {
-        ProducerRecord<String, DomainEvent> producerRecord = new ProducerRecord<>(kafkaProducerProps.getTopic(), domainEvent.getUuid().toString(), domainEvent);
+        ProducerRecord<String, DomainEvent> producerRecord = new ProducerRecord<>(kafkaProducerProps.getTopic(), 0,domainEvent.getUuid().toString(), domainEvent);
 
         return sender.send(Mono.just(SenderRecord.create(producerRecord, domainEvent.getUuid().toString())))
                 .doOnNext(r -> {
@@ -61,6 +61,6 @@ public class DomainEventPublisherReactive {
                             dateFormat.format(new Date(metadata.timestamp())));
                 })
                 .then()
-                .doOnError(e -> log.error("Sending to Kafka failed:"+  e.getMessage()));
+                .doOnError(e -> log.info("Sending to Kafka failed:"+  e.getMessage()));
     }
 }

@@ -15,20 +15,23 @@ import java.util.UUID;
 @ToString(callSuper = true)
 @JsonPropertyOrder({"uuid", "eventType", "occurredOn", "predictedWorkload", "predictionBasedOnDateTime", "eventTriggerUuid"})
 @Getter
-public class PredictionReported extends DomainEvent {
+public class ShorttermPredictionReported extends DomainEvent {
 
-    private int predictedWorkload;
+    private final int predictedWorkload;
 
-    private String predictionBasedOnDateTime;
+    private final String predictionBasedOnDateTime;
 
-    private String eventTriggerUuid;
+    private final String eventTriggerUuid;
+
 
     @JsonCreator
-    public PredictionReported(@JsonProperty("uuid") String uuid, @JsonProperty("occurredOn") LocalDateTime occurredOn, @JsonProperty("predictedWorkload") int predictedWorkload, @JsonProperty("predictionBaseOnDateTime") String predictionBasedOnDateTime, @JsonProperty("eventTriggerUuid") String eventTriggerUuid) {
+    public ShorttermPredictionReported(@JsonProperty("uuid") String uuid, @JsonProperty("occurredOn") LocalDateTime occurredOn, @JsonProperty("predictedWorkload") int predictedWorkload, @JsonProperty("predictionBasedOnDateTime") String predictionBasedOnDateTime, @JsonProperty("eventTriggerUuid") String eventTriggerUuid) {
+
         super(UUID.fromString(uuid), occurredOn);
-        this.predictedWorkload=predictedWorkload;
+        this.predictedWorkload = predictedWorkload;
         this.predictionBasedOnDateTime=predictionBasedOnDateTime;
         this.eventTriggerUuid=eventTriggerUuid;
+
     }
 
     @Override

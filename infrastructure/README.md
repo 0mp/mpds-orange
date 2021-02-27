@@ -71,6 +71,7 @@ Create clusterrolebinding on Kubernetes for Flink
 $ kubectl create clusterrolebinding flink-role-binding-default --clusterrole=edit --serviceaccount=default:default
 ```
 
+
 If you do not want to use the default service account, use the following command to create a new flink-service-account service account and set the role binding. 
 Then use the config option `-Dkubernetes.service-account=flink-service-account` to make the JobManager pod use the flink-service-account service account to create/delete TaskManager pods and leader ConfigMaps. 
 Also this will allow the TaskManager to watch leader ConfigMaps to retrieve the address of JobManager and ResourceManager.
@@ -84,7 +85,7 @@ A Flink native Kubernetes cluster in session mode could be deployed like this:
 ```
 ./bin/kubernetes-session.sh \
     -Dkubernetes.cluster-id=flink-cluster \
-    -Dkubernetes.container.image=eu.gcr.io/mpds-task-2/covid-engine:2.3.1 \
+    -Dkubernetes.container.image=eu.gcr.io/mpds-task-orange/covid-engine:2.3.1 \
     -Dkubernetes.container.image.pull-policy=Always \
     -Dexecution.attached=true \
     -Dkubernetes.jobmanager.annotations=prometheus.io/scrape:'true',prometheus.io/port:'9999' \
@@ -99,13 +100,33 @@ A Flink native Kubernetes cluster in session mode could be deployed like this:
     -Dstate.savepoints.dir=hdfs://hadoop-hdfs-namenode:8020/flink/savepoints
 ```
 
+Or like this using the custom service account:
+```
+./bin/kubernetes-session.sh \
+	-Dkubernetes.service-account=flink-service-account \
+	-Dkubernetes.cluster-id=flink-cluster \
+	-Dkubernetes.container.image=eu.gcr.io/mpds-task-orange/covid-engine:2.3.1 \
+	-Dkubernetes.container.image.pull-policy=Always \
+	-Dexecution.attached=true \
+	-Dkubernetes.jobmanager.annotations=prometheus.io/scrape:'true',prometheus.io/port:'9999' \
+	-Dkubernetes.taskmanager.annotations=prometheus.io/scrape:'true',prometheus.io/port:'9999' \
+	-Dmetrics.latency.granularity=OPERATOR \
+	-Dmetrics.latency.interval=1000 \
+	-Dmetrics.reporters=prom \
+	-Dmetrics.reporter.prom.class=org.apache.flink.metrics.prometheus.PrometheusReporter \
+	-Dmetrics.reporter.prom.port=9999 \
+	-Dmetrics.reporter.jmx.class=org.apache.flink.metrics.jmx.JMXReporter \
+	-Dmetrics.reporter.jmx.port=8789 \
+	-Dstate.savepoints.dir=hdfs://hadoop-hdfs-namenode:8020/flink/savepoints
+```
+
 Get the Flink Web UI URL:
 
 ```
 NODE_PORT=$(kubectl get --namespace default -o jsonpath="{.spec.ports[0].nodePort}" services flink-cluster-rest)
 NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="ExternalIP")].address}')
 echo http://$NODE_IP:$NODE_PORT
-````
+```
 
 Submit the Flink job and start the application, e.g.:
 
@@ -119,13 +140,32 @@ Submit the Flink job and start the application, e.g.:
   <img width="460" height="300" src="images/pipeline.jpg">
 </p>
 
+
+## Removal & Cleanup
+Manual Resource Cleanup for FLink
+```
+kubectl delete deployment/flink-cluster
+```
+
+Uninstall the charts with:
+```
+helm uninstall [DEPLOYMENT NAME]
+```
+
+To delete all resources created by Terraform, run:
+```
+terraform destroy
+```
+
+
+
 ## Troubleshooting
 * Sometimes the Terraform commands don't work immediately. In that case, repeat the Terraform commands mentioned above (see (see https://stackoverflow.com/questions/62106154/frequent-error-when-deploying-helm-to-gke-with-terraform))
 * Update the latest GKE stable version if errors are thrown related to that on the Terraform main.tf file
 * Enable the APIs manually through the GCP console if required
 * Get cluster credentials without Terraform if required
   ```
-  gcloud container clusters get-credentials mpds-task-2-cluster --zone europe-west3-a
+  gcloud container clusters get-credentials mpds-task-orange-cluster --zone europe-west3-a
   ```
 
 * Retrieve the IAM roles if required:

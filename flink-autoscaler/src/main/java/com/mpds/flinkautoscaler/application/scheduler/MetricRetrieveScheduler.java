@@ -1,7 +1,5 @@
 package com.mpds.flinkautoscaler.application.scheduler;
 
-import com.mpds.flinkautoscaler.application.mappers.PrometheusMetricMapper;
-import com.mpds.flinkautoscaler.domain.model.Data;
 import com.mpds.flinkautoscaler.domain.model.PrometheusMetric;
 import com.mpds.flinkautoscaler.domain.model.events.DomainEvent;
 import com.mpds.flinkautoscaler.domain.model.events.MetricReported;
@@ -15,12 +13,14 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.UUID;
 
 @Component
 @Slf4j
@@ -34,54 +34,137 @@ public class MetricRetrieveScheduler {
 
     private final DomainEventPublisherReactive domainEventPublisherReactive;
 
-    private final PrometheusMetricMapper prometheusMetricMapper;
-
-    private static final String KAFKA_METRIC_TOPIC ="covid";
+    public static final String PROMETHEUS_QUERY_PATH="/api/v1/query";
 
     // Every 5 seconds
-    @Scheduled(fixedDelay = 5000)
+//    @Scheduled(fixedDelay = 5000)
+    // Every 10 seconds
+    @Scheduled(fixedDelay = 10000)
     public void scheduleMetricRetrieval() {
         log.info("Start retrieving metrics...");
 
-        LocalDateTime currentDateTime = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
+        allPrometheusRequests().flatMap(this.domainEventPublisherReactive::sendMessages).subscribe();
 
-        String currentDateTimeString = currentDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'"));
-
-        this.webClient.post()
-                .uri("http://34.107.94.158:30090/api/v1/query")
-//                .uri(prometheusProps.getQueryPath())
-                .body(BodyInserters.fromFormData(getKafkaMessagesPerSecondsFormData(currentDateTimeString)))
-                .retrieve()
-                .bodyToMono(PrometheusMetric.class)
-                .flatMap(prometheusMetric -> {
-                    Data data = prometheusMetric.getData();
-
-                    return Flux.fromIterable(data.getResult())
-                            .flatMap(result -> {
-                                Object[] resultObject = result.getValue();
-                                int unix_timestamp = (int) resultObject[0];
-                                LocalDateTime onDateTime = LocalDateTime.ofInstant(Instant.ofEpochSecond(unix_timestamp), ZoneOffset.UTC);
-                                log.info("Metric retrieved at: " + onDateTime.toString());
-
-                                float kafkaMessagesPerSeconds = Float.parseFloat(String.valueOf(resultObject[1]));
-                                log.info("Kafka Messages per seconds: " + kafkaMessagesPerSeconds);
-
-                                DomainEvent domainEvent = new MetricReported(kafkaMessagesPerSeconds, onDateTime, KAFKA_METRIC_TOPIC, "", 0, 0, 0, 0, true, 0.0f, 0.0f);
-                                return this.domainEventPublisherReactive.sendMessages(domainEvent);
-                            }).then();
-                })
-                .subscribe();
     }
 
-    private MultiValueMap<String, String> getKafkaMessagesPerSecondsFormData(String dateTime) {
+    private Mono<DomainEvent> allPrometheusRequests() {
+        LocalDateTime currentDateTime = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
+        String currentDateTimeString = currentDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'"));
 
-        log.info("getKafkaMessagesPerSecondsFormData for dateTime: " + dateTime);
+        Mono<PrometheusMetric> kafkaLoadMsg = getPrometheusMetric(getKafkaMessagesPerSecond(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
+        Mono<PrometheusMetric> kafkaLagMsg = getPrometheusMetric(getKafkaLag(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
+        Mono<PrometheusMetric> cpuMsg = getPrometheusMetric(getCpuUsage(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
+        Mono<PrometheusMetric> maxJobLatencyMsg = getPrometheusMetric(getMaxJobLatency(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
+        Mono<PrometheusMetric> memMsg = getPrometheusMetric(getMemUsage(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
 
-        LinkedMultiValueMap<String, String> kafkaMessagesPerSecondsLinkedMultiValueMap = new LinkedMultiValueMap<>();
-        final String PROMETHEUS_QUERY = "sum by (topic) (rate(kafka_server_brokertopicmetrics_messagesinpersec_count[2m]))";
-        kafkaMessagesPerSecondsLinkedMultiValueMap.add("query", PROMETHEUS_QUERY);
-        kafkaMessagesPerSecondsLinkedMultiValueMap.add("time", dateTime);
 
-        return kafkaMessagesPerSecondsLinkedMultiValueMap;
+        return Mono.zip(cpuMsg, kafkaLagMsg, kafkaLoadMsg, maxJobLatencyMsg, memMsg).map(tuple -> {
+            float cpu=0.0f;
+            if(tuple.getT1().getData().getResult().size()>0) {
+                cpu = Float.parseFloat(tuple.getT1().getData().getResult().get(0).getValue()[1].toString());
+            }
+
+            float kafkaLag=0.0f;
+            if(tuple.getT2().getData().getResult().size()>0) {
+                kafkaLag = Float.parseFloat(tuple.getT2().getData().getResult().get(0).getValue()[1].toString());
+            }
+            float kafkaLoad=0.0f;
+            if(tuple.getT3().getData().getResult().size()>0) {
+                kafkaLoad = Float.parseFloat(tuple.getT3().getData().getResult().get(0).getValue()[1].toString());
+            }
+
+            float maxJobLatency=0.0f;
+            if(tuple.getT4().getData().getResult().size()>0) {
+                maxJobLatency = Float.parseFloat(tuple.getT4().getData().getResult().get(0).getValue()[1].toString());
+            }
+
+            float mem=0.0f;
+            if(tuple.getT5().getData().getResult().size()>0) {
+                mem = Float.parseFloat(tuple.getT5().getData().getResult().get(0).getValue()[1].toString());
+            }
+            MetricReported domainEvent = new MetricReported(
+                    UUID.randomUUID(),
+                    kafkaLoad,
+                    currentDateTime,
+                    this.prometheusProps.getSourceTopic(),
+                    "",
+                    maxJobLatency,
+                    0,
+                    0,
+                    0,
+                    true,
+                    cpu,
+                    mem,
+                    kafkaLag);
+//            PredictionReported domainEvent = new PredictionReported(
+//                    UUID.randomUUID().toString(),
+//                    LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC),
+//                    1,
+//                    LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC).toString(),
+//                    UUID.randomUUID().toString()
+//                    );
+            log.info(domainEvent.toString());
+
+            return domainEvent;
+        });
+
+    }
+
+    private Mono<PrometheusMetric> getPrometheusMetric(MultiValueMap<String, String> message) {
+
+        return this.webClient.post()
+                .uri(PROMETHEUS_QUERY_PATH)
+                .body(BodyInserters.fromFormData(message))
+                .retrieve()
+                .bodyToMono(PrometheusMetric.class);
+    }
+
+    private MultiValueMap<String, String> getCpuUsage(String dateTime) {
+        log.info("get CPU usage for dateTime: " + dateTime);
+        LinkedMultiValueMap<String, String> lmvn = new LinkedMultiValueMap<>();
+        final String PROMETHEUS_QUERY = "sum(flink_taskmanager_Status_JVM_CPU_Load) / sum(flink_jobmanager_numRegisteredTaskManagers)";
+        lmvn.add("query", PROMETHEUS_QUERY);
+        lmvn.add("time", dateTime);
+        return lmvn;
+    }
+
+    private MultiValueMap<String, String> getKafkaLag(String dateTime) {
+
+        log.info("get Kafka lag for dateTime: " + dateTime);
+        LinkedMultiValueMap<String, String> lmvn = new LinkedMultiValueMap<>();
+        final String PROMETHEUS_QUERY = "sum(flink_taskmanager_job_task_operator_KafkaConsumer_records_lag_max) / count(flink_taskmanager_job_task_operator_KafkaConsumer_records_lag_max)";
+        lmvn.add("query", PROMETHEUS_QUERY);
+        lmvn.add("time", dateTime);
+        return lmvn;
+    }
+
+    private MultiValueMap<String, String> getMaxJobLatency(String dateTime) {
+
+        log.info("get max job latency for dateTime: " + dateTime);
+        LinkedMultiValueMap<String, String> lmvn = new LinkedMultiValueMap<>();
+        final String PROMETHEUS_QUERY = "max(flink_taskmanager_job_latency_source_id_operator_id_operator_subtask_index_latency)";
+        lmvn.add("query", PROMETHEUS_QUERY);
+        lmvn.add("time", dateTime);
+        return lmvn;
+    }
+
+    private MultiValueMap<String, String> getMemUsage(String dateTime) {
+
+        log.info("get Memory usage for dateTime: " + dateTime);
+        LinkedMultiValueMap<String, String> lmvn = new LinkedMultiValueMap<>();
+        final String PROMETHEUS_QUERY = "sum(flink_taskmanager_Status_JVM_Memory_Heap_Used / flink_taskmanager_Status_JVM_Memory_Heap_Committed) / sum(flink_jobmanager_numRegisteredTaskManagers)";
+        lmvn.add("query", PROMETHEUS_QUERY);
+        lmvn.add("time", dateTime);
+        return lmvn;
+    }
+
+    private MultiValueMap<String, String> getKafkaMessagesPerSecond(String dateTime) {
+
+        log.info("getKafkaMessagesPerSecond for dateTime: " + dateTime);
+        LinkedMultiValueMap<String, String> lmvn = new LinkedMultiValueMap<>();
+        final String PROMETHEUS_QUERY = "sum by ("+this.prometheusProps.getSourceTopic()+") (rate(kafka_server_brokertopicmetrics_messagesinpersec_count[2m]))";
+        lmvn.add("query", PROMETHEUS_QUERY);
+        lmvn.add("time", dateTime);
+        return lmvn;
     }
 }

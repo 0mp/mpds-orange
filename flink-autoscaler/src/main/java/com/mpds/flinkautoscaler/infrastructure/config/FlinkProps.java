@@ -5,16 +5,17 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConfigurationProperties(prefix = "metrics-server.prometheus")
+@ConfigurationProperties(prefix = "autoscaler.flink")
 @Data
-public class PrometheusProps {
+public class FlinkProps {
 
     private String baseUrl;
 
-    private String sourceTopic;
-}
+    private String jobId;
 
-//    private String url;
-//
-//    private String queryPath;
-//}
+    private String jarId;
+
+    private String programArgs;
+
+    private String savepointDirectory;
+}
