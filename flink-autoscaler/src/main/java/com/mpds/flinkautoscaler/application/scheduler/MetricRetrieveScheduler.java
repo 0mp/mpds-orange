@@ -1,7 +1,5 @@
 package com.mpds.flinkautoscaler.application.scheduler;
 
-import com.mpds.flinkautoscaler.application.engine.RescaleManager;
-import com.mpds.flinkautoscaler.application.mappers.PrometheusMetricMapper;
 import com.mpds.flinkautoscaler.domain.model.PrometheusMetric;
 import com.mpds.flinkautoscaler.domain.model.events.DomainEvent;
 import com.mpds.flinkautoscaler.domain.model.events.MetricReported;
@@ -36,11 +34,7 @@ public class MetricRetrieveScheduler {
 
     private final DomainEventPublisherReactive domainEventPublisherReactive;
 
-    private final PrometheusMetricMapper prometheusMetricMapper;
-
 //    private static final String KAFKA_METRIC_TOPIC ="covid";
-
-    private final RescaleManager rescaleManager;
 
     // Every 5 seconds
 //    @Scheduled(fixedDelay = 5000)
@@ -109,7 +103,6 @@ public class MetricRetrieveScheduler {
 //                    UUID.randomUUID().toString()
 //                    );
             log.info(domainEvent.toString());
-//            this.rescaleManager.evaluate(domainEvent);
 
             return domainEvent;
         });

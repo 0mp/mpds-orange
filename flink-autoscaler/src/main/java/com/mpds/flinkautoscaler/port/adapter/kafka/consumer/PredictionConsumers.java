@@ -21,7 +21,7 @@ public class PredictionConsumers {
     private final PredictionCacheService predictionCacheService;
 
     @Bean
-    public Consumer<Flux<Message<ShorttermPredictionReported>>> shortTermPrediction() {
+    public Consumer<Flux<Message<ShorttermPredictionReported>>> shortTermPredictions() {
        return flux -> flux.flatMap(shortternPredictionReportedMessage -> {
            ShorttermPredictionReported shorttermPredictionReported = shortternPredictionReportedMessage.getPayload();
             log.debug("STP - Caching: {}", shorttermPredictionReported.toString());
@@ -34,7 +34,7 @@ public class PredictionConsumers {
 
 
     @Bean
-    public Consumer<Flux<Message<LongtermPredictionReported>>> longTermPrediction() {
+    public Consumer<Flux<Message<LongtermPredictionReported>>> longTermPredictions() {
         return flux -> flux.flatMap(longtermPredictionReportedMessage -> {
             LongtermPredictionReported longtermPredictionReported = longtermPredictionReportedMessage.getPayload();
             log.debug("LTP - Caching: {}", longtermPredictionReported.toString());
