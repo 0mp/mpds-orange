@@ -27,8 +27,8 @@ r2dbc:
     show-sql: true
 # Kafka config
 kafka:
-#  bootstrap-server: localhost:9092
-  bootstrap-server: 35.246.173.215:31090
+  bootstrap-server: localhost:9092
+#  bootstrap-server: 35.198.125.206:31090
   st-prediction-topic: st-prediction
   lt-prediction-topic: lt-prediction
   topic: metric
@@ -36,13 +36,13 @@ kafka:
   acks-config: all
 metrics-server:
   prometheus:
-    base-url: http://35.246.173.215:30090
+    base-url: http://35.198.125.206:30090
     source-topic: covid
 autoscaler:
   flink:
     base-url: http://35.246.152.162:8081
-    job-id: 9d88e770b54a18c6f6b82f3db0709450
-    jar-id: fbd78fef-14d5-4c3c-b1c0-141fac18f5d9_covid-engine-2.3.1.jar
+    job-id: 4aed8fef141155b5eb882068e2303243
+    jar-id: d4fdaac8-00df-4d8b-b351-ec5ce6cf0c1c_covid-engine-2.3.1.jar
     program-args: --statebackend.default false --checkpoint hdfs://hadoop-hdfs-namenode:8020/flink/checkpoints --checkpoint.interval 300000
     savepoint-directory: hdfs://hadoop-hdfs-namenode:8020/flink/savepoints
 spring:
@@ -56,8 +56,8 @@ spring:
           longTermPredictions-in-0: long-term-predictions
       kafka:
         binder:
-          brokers: 35.246.173.215:31090
-#          brokers: localhost:9092
+#          brokers: 35.198.125.206:31090
+          brokers: localhost:9092
       bindings:
         prometheus-metrics:
           destination: metric

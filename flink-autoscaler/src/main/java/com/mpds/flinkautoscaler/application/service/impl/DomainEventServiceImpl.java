@@ -115,6 +115,7 @@ public class DomainEventServiceImpl implements DomainEventService {
         }
 
         if(rescale) {
+            int finalTargetParallelism = targetParallelism;
             return this.createFlinkSavepoint(this.flinkProps.getJobId(), this.flinkProps.getSavepointDirectory(), true)
                     // 2.2 Get savepoint path using the received request id
                     // Wait with the request for 10 seconds so that the savepoint can complete
@@ -126,7 +127,7 @@ public class DomainEventServiceImpl implements DomainEventService {
                     // 2.3 Start the job with the new parallelism using the savepoint path created from before
                     .flatMap(flinkSavepointInfoResponse -> {
                         log.info("flinkSavepointInfoResponse: " + flinkSavepointInfoResponse.toString());
-                        return runFlinkJob(this.flinkProps.getJarId(), this.flinkProps.getJobId(), this.flinkProps.getProgramArgs(), targetParallelism, flinkSavepointInfoResponse.getOperation().getLocation());
+                        return runFlinkJob(this.flinkProps.getJarId(), this.flinkProps.getJobId(), this.flinkProps.getProgramArgs(), finalTargetParallelism, flinkSavepointInfoResponse.getOperation().getLocation());
                     })
                     .flatMap(flinkRunJobResponse -> {
                         log.info("The job has been started successfully: " + flinkRunJobResponse.toString());

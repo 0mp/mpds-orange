@@ -36,10 +36,9 @@ public class MetricRetrieveScheduler {
 
     public static final String PROMETHEUS_QUERY_PATH="/api/v1/query";
 
-//    private static final String KAFKA_METRIC_TOPIC ="covid";
-
     // Every 5 seconds
 //    @Scheduled(fixedDelay = 5000)
+    // Every 10 seconds
     @Scheduled(fixedDelay = 10000)
     public void scheduleMetricRetrieval() {
         log.info("Start retrieving metrics...");
