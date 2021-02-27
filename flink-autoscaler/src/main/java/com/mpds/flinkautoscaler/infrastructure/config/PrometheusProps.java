@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
 @Data
 public class PrometheusProps {
 
-    private String queryUri;
+    private String baseUrl;
 
     private String sourceTopic;
 }

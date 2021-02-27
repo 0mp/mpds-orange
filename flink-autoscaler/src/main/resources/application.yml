@@ -36,7 +36,7 @@ kafka:
   acks-config: all
 metrics-server:
   prometheus:
-    query-uri: http://35.246.173.215:30090/api/v1/query
+    base-url: http://35.246.173.215:30090
     source-topic: covid
 autoscaler:
   flink:

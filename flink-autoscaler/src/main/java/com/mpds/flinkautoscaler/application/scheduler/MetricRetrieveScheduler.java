@@ -34,6 +34,8 @@ public class MetricRetrieveScheduler {
 
     private final DomainEventPublisherReactive domainEventPublisherReactive;
 
+    public static final String PROMETHEUS_QUERY_PATH="/api/v1/query";
+
 //    private static final String KAFKA_METRIC_TOPIC ="covid";
 
     // Every 5 seconds
@@ -112,14 +114,13 @@ public class MetricRetrieveScheduler {
     private Mono<PrometheusMetric> getPrometheusMetric(MultiValueMap<String, String> message) {
 
         return this.webClient.post()
-                .uri(this.prometheusProps.getQueryUri())
+                .uri(PROMETHEUS_QUERY_PATH)
                 .body(BodyInserters.fromFormData(message))
                 .retrieve()
                 .bodyToMono(PrometheusMetric.class);
     }
 
     private MultiValueMap<String, String> getCpuUsage(String dateTime) {
-
         log.info("get CPU usage for dateTime: " + dateTime);
         LinkedMultiValueMap<String, String> lmvn = new LinkedMultiValueMap<>();
         final String PROMETHEUS_QUERY = "sum(flink_taskmanager_Status_JVM_CPU_Load) / sum(flink_jobmanager_numRegisteredTaskManagers)";

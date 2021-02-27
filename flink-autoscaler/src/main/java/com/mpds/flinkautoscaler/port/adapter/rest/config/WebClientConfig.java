@@ -10,8 +10,7 @@ public class WebClientConfig {
 
     @Bean
     public WebClient webClient(PrometheusProps prometheusProps){
-        return WebClient.create();
-//        return WebClient.create(prometheusProps.getUrl());
-//        return WebClient.builder().baseUrl(prometheusConfig.getUrl()).build();
+        return WebClient.builder()
+                .baseUrl(prometheusProps.getBaseUrl()).build();
     }
 }
