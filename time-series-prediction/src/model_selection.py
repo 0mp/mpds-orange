@@ -72,11 +72,10 @@ def run_lmu(lmu_model, optimizer, param_dict, tf_ts, start, end, train_buff, pat
                                                            )
         
         ts_in = tf_ts[:,(i+1)-param_dict["seq_len"]:i+1,:]
-        to_pred = tf_ts[:,i+1:i+1+param_dict["pred_len"],:]
-        pred_loss = tf_loss(to_pred, lmu_model(ts_in)).numpy()
-                    
+        to_pred = tf_ts[:,i+1:i+1+param_dict["pred_len"],0]
+        pred_loss = tf_loss(to_pred, lmu_model(ts_in)).numpy().item()
         param_dict["train_dur"].append(duration)
-        param_dict["train_loss"].append(loss)
+        param_dict["train_loss"].append(loss.numpy().item())
         param_dict["pred_loss"].append(pred_loss)
         
     df = make_pf_from_dict(param_dict)
@@ -139,7 +138,7 @@ def lmu_vs_gru(signal, lrs = [0.001, 0.003], gru_stacks = [3,5], hidden_dims = [
     lmu_path = f"./model-comparison-stats/lmu/{timestamp}"
     os.makedirs(gru_path, exist_ok=True)
     os.makedirs(lmu_path, exist_ok=True)
-      
+    
     with ThreadPoolExecutor(threads) as executor:
         futures = []
         for gru_model, optimizer, param_dict in gru_models:
@@ -160,9 +159,17 @@ def lmu_vs_gru(signal, lrs = [0.001, 0.003], gru_stacks = [3,5], hidden_dims = [
             
             name = f"lr_{param_dict['lr']}-seq_len_{param_dict['seq_len']}-pred_len_{param_dict['pred_len']}-hidden_dim_{param_dict['hidden_dim']}-memory_dim_{param_dict['memory_dim']}-order_{param_dict['order']}"
             
+            #run_lmu(lmu_model, optimizer, param_dict, tf.identity(tf_ts), start, end, train_buff, os.path.join(lmu_path, name))
             futures.append((executor.submit(run_lmu, lmu_model, optimizer, param_dict, tf.identity(tf_ts), start, end, train_buff, os.path.join(lmu_path, name)), name))
             
         with tqdm(futures) as pbar:
             for f, name in pbar:
                 pbar.set_postfix(model=name)
                 f.result()
+                
+                
+if __name__=="__main__":
+    signal1 = lambda t: np.sin(t/4) + np.sin(t/2) + np.random.normal(loc=0.0, scale=0.2, size=t.shape)
+    lmu_vs_gru(signal1)
+    signal2 = lambda t: np.sin(t/4 + 2) + np.sin(t/2) + np.sin(t + 1) + np.random.normal(loc=0.0, scale=0.2, size=t.shape)
+    lmu_vs_gru(signal2)
