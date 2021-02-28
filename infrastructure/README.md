@@ -24,7 +24,7 @@ Simply, run `make services-install`.
 
 ### Deploying Hadoop for HDFS manually
 
-Run `./scripts/hdfs-deploy.sh`.
+Run `make hdfs-install`.
 
 ### Deploying Kafka, Prometheus, Grafana, and Redis manually
 
