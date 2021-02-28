@@ -12,14 +12,20 @@ cluster-destroy:
 	cd k8s/terraform && terraform destroy
 
 services-install:
-	./scripts/hdfs-deploy.sh
+	${MAKE} hdfs-install
 	cd ${HELM_DIR} && helm install mpds .
 	${MAKE} flink-deploy
 
 services-uninstall:
-	-helm uninstall hadoop
+	-${MAKE} hdfs-uninstall
 	-helm uninstall mpds
 	-${MAKE} flink-stop
+
+hdfs-install:
+	./scripts/hdfs-deploy.sh
+
+hdfs-uninstall:
+	helm uninstall hadoop
 
 FLINK_DIR=	flink-1.12.1
 FLINK_TARBALL=	${FLINK_DIR}-bin-scala_2.12.tgz
