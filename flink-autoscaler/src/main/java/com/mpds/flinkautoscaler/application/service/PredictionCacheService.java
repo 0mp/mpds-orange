@@ -1,5 +1,6 @@
 package com.mpds.flinkautoscaler.application.service;
 
+import com.mpds.flinkautoscaler.domain.model.MetricTriggerPredictionsSnapshot;
 import com.mpds.flinkautoscaler.domain.model.events.DomainEvent;
 
 public interface PredictionCacheService {
@@ -13,4 +14,8 @@ public interface PredictionCacheService {
     DomainEvent getPredictionFrom(String eventType);
 
     DomainEvent cacheDomainEvent(DomainEvent domainEvent);
+
+    MetricTriggerPredictionsSnapshot getMetricTriggerPredictionsSnapshot(String snapshotCacheKey);
+
+    MetricTriggerPredictionsSnapshot cacheSnapshot(MetricTriggerPredictionsSnapshot metricTriggerPredictionsSnapshot);
 }

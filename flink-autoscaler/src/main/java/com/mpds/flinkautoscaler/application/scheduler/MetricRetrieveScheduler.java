@@ -1,5 +1,6 @@
 package com.mpds.flinkautoscaler.application.scheduler;
 
+import com.mpds.flinkautoscaler.application.service.PrometheusApiService;
 import com.mpds.flinkautoscaler.domain.model.PrometheusMetric;
 import com.mpds.flinkautoscaler.domain.model.events.DomainEvent;
 import com.mpds.flinkautoscaler.domain.model.events.MetricReported;
@@ -9,10 +10,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -28,13 +25,14 @@ import java.util.UUID;
 public class MetricRetrieveScheduler {
 
     // Used to query the metrics via REST
-    private final WebClient webClient;
+//    private final WebClient webClient;
 
     private final PrometheusProps prometheusProps;
 
     private final DomainEventPublisherReactive domainEventPublisherReactive;
 
-    public static final String PROMETHEUS_QUERY_PATH="/api/v1/query";
+    private final PrometheusApiService prometheusApiService;
+
 
     // Every 5 seconds
 //    @Scheduled(fixedDelay = 5000)
@@ -51,11 +49,11 @@ public class MetricRetrieveScheduler {
         LocalDateTime currentDateTime = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
         String currentDateTimeString = currentDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'"));
 
-        Mono<PrometheusMetric> kafkaLoadMsg = getPrometheusMetric(getKafkaMessagesPerSecond(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
-        Mono<PrometheusMetric> kafkaLagMsg = getPrometheusMetric(getKafkaLag(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
-        Mono<PrometheusMetric> cpuMsg = getPrometheusMetric(getCpuUsage(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
-        Mono<PrometheusMetric> maxJobLatencyMsg = getPrometheusMetric(getMaxJobLatency(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
-        Mono<PrometheusMetric> memMsg = getPrometheusMetric(getMemUsage(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
+        Mono<PrometheusMetric> kafkaLoadMsg = prometheusApiService.getPrometheusMetric(prometheusApiService.getKafkaMessagesPerSecond(currentDateTimeString, prometheusProps.getSourceTopic())).subscribeOn(Schedulers.boundedElastic());
+        Mono<PrometheusMetric> kafkaLagMsg = prometheusApiService.getPrometheusMetric(prometheusApiService.getKafkaLag(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
+        Mono<PrometheusMetric> cpuMsg = prometheusApiService.getPrometheusMetric(prometheusApiService.getCpuUsage(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
+        Mono<PrometheusMetric> maxJobLatencyMsg = prometheusApiService.getPrometheusMetric(prometheusApiService.getMaxJobLatency(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
+        Mono<PrometheusMetric> memMsg = prometheusApiService.getPrometheusMetric(prometheusApiService.getMemUsage(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
 
 
         return Mono.zip(cpuMsg, kafkaLagMsg, kafkaLoadMsg, maxJobLatencyMsg, memMsg).map(tuple -> {
@@ -110,61 +108,4 @@ public class MetricRetrieveScheduler {
 
     }
 
-    private Mono<PrometheusMetric> getPrometheusMetric(MultiValueMap<String, String> message) {
-
-        return this.webClient.post()
-                .uri(PROMETHEUS_QUERY_PATH)
-                .body(BodyInserters.fromFormData(message))
-                .retrieve()
-                .bodyToMono(PrometheusMetric.class);
-    }
-
-    private MultiValueMap<String, String> getCpuUsage(String dateTime) {
-        log.info("get CPU usage for dateTime: " + dateTime);
-        LinkedMultiValueMap<String, String> lmvn = new LinkedMultiValueMap<>();
-        final String PROMETHEUS_QUERY = "sum(flink_taskmanager_Status_JVM_CPU_Load) / sum(flink_jobmanager_numRegisteredTaskManagers)";
-        lmvn.add("query", PROMETHEUS_QUERY);
-        lmvn.add("time", dateTime);
-        return lmvn;
-    }
-
-    private MultiValueMap<String, String> getKafkaLag(String dateTime) {
-
-        log.info("get Kafka lag for dateTime: " + dateTime);
-        LinkedMultiValueMap<String, String> lmvn = new LinkedMultiValueMap<>();
-        final String PROMETHEUS_QUERY = "sum(flink_taskmanager_job_task_operator_KafkaConsumer_records_lag_max) / count(flink_taskmanager_job_task_operator_KafkaConsumer_records_lag_max)";
-        lmvn.add("query", PROMETHEUS_QUERY);
-        lmvn.add("time", dateTime);
-        return lmvn;
-    }
-
-    private MultiValueMap<String, String> getMaxJobLatency(String dateTime) {
-
-        log.info("get max job latency for dateTime: " + dateTime);
-        LinkedMultiValueMap<String, String> lmvn = new LinkedMultiValueMap<>();
-        final String PROMETHEUS_QUERY = "max(flink_taskmanager_job_latency_source_id_operator_id_operator_subtask_index_latency)";
-        lmvn.add("query", PROMETHEUS_QUERY);
-        lmvn.add("time", dateTime);
-        return lmvn;
-    }
-
-    private MultiValueMap<String, String> getMemUsage(String dateTime) {
-
-        log.info("get Memory usage for dateTime: " + dateTime);
-        LinkedMultiValueMap<String, String> lmvn = new LinkedMultiValueMap<>();
-        final String PROMETHEUS_QUERY = "sum(flink_taskmanager_Status_JVM_Memory_Heap_Used / flink_taskmanager_Status_JVM_Memory_Heap_Committed) / sum(flink_jobmanager_numRegisteredTaskManagers)";
-        lmvn.add("query", PROMETHEUS_QUERY);
-        lmvn.add("time", dateTime);
-        return lmvn;
-    }
-
-    private MultiValueMap<String, String> getKafkaMessagesPerSecond(String dateTime) {
-
-        log.info("getKafkaMessagesPerSecond for dateTime: " + dateTime);
-        LinkedMultiValueMap<String, String> lmvn = new LinkedMultiValueMap<>();
-        final String PROMETHEUS_QUERY = "sum by ("+this.prometheusProps.getSourceTopic()+") (rate(kafka_server_brokertopicmetrics_messagesinpersec_count[2m]))";
-        lmvn.add("query", PROMETHEUS_QUERY);
-        lmvn.add("time", dateTime);
-        return lmvn;
-    }
 }

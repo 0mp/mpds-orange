@@ -10,6 +10,7 @@ import java.util.Collections;
 public class CacheCustomizer implements CacheManagerCustomizer<ConcurrentMapCacheManager> {
 
     public static final String PREDICTION_CACHE="predictions";
+    public static final String TRIGGER_PREDICTIONS_SNAPSHOT_CACHE="predictions-snapshot";
 
     @Override
     public void customize(ConcurrentMapCacheManager cacheManager) {

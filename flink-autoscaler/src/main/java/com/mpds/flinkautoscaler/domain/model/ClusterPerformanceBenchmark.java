@@ -1,5 +1,7 @@
 package com.mpds.flinkautoscaler.domain.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
@@ -11,6 +13,8 @@ import java.time.LocalDateTime;
 
 @Table("cluster_performance_benchmark")
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Data
 public class ClusterPerformanceBenchmark {
 
@@ -23,7 +27,7 @@ public class ClusterPerformanceBenchmark {
     @Column("max_rate")
     private int maxRate;
 
-    @Column("parallelization")
+    @Column("parallelism")
     private int parallelism;
 
     @Column("restart_time")

@@ -2,7 +2,10 @@ package com.mpds.flinkautoscaler.application.service.impl;
 
 import com.mpds.flinkautoscaler.application.constants.PredictionConstants;
 import com.mpds.flinkautoscaler.application.service.DomainEventService;
+import com.mpds.flinkautoscaler.application.service.FlinkApiService;
 import com.mpds.flinkautoscaler.application.service.PredictionCacheService;
+import com.mpds.flinkautoscaler.domain.model.ClusterPerformanceBenchmark;
+import com.mpds.flinkautoscaler.domain.model.MetricTriggerPredictionsSnapshot;
 import com.mpds.flinkautoscaler.domain.model.events.LongtermPredictionReported;
 import com.mpds.flinkautoscaler.domain.model.events.MetricReported;
 import com.mpds.flinkautoscaler.domain.model.events.ShorttermPredictionReported;
@@ -20,6 +23,9 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Service
 @Slf4j
@@ -28,6 +34,7 @@ public class DomainEventServiceImpl implements DomainEventService {
     private final WebClient webClient;
 
     private final PredictionCacheService predictionCacheService;
+    private final FlinkApiService flinkApiService;
 
     private final ClusterPerformanceBenchmarkRepository clusterPerformanceBenchmarkRepository;
 
@@ -38,13 +45,14 @@ public class DomainEventServiceImpl implements DomainEventService {
     private final String FLINK_SAVEPOINT_INFO_PATH = "/jobs/{jobId}/savepoints/{triggerId}";
     private final String FLINK_JAR_RUN_PATH = "/jars/{jarId}/run";
 
-    public DomainEventServiceImpl(FlinkProps flinkProps, ClusterPerformanceBenchmarkRepository clusterPerformanceBenchmarkRepository, PredictionCacheService predictionCacheService) {
+    public DomainEventServiceImpl(FlinkProps flinkProps, ClusterPerformanceBenchmarkRepository clusterPerformanceBenchmarkRepository, PredictionCacheService predictionCacheService, FlinkApiService flinkApiService) {
         this.flinkProps = flinkProps;
         this.clusterPerformanceBenchmarkRepository = clusterPerformanceBenchmarkRepository;
         this.predictionCacheService=predictionCacheService;
         this.webClient = WebClient.builder()
                 .baseUrl(flinkProps.getBaseUrl())
                 .build();
+        this.flinkApiService = flinkApiService;
     }
 
     @Override
@@ -93,20 +101,14 @@ public class DomainEventServiceImpl implements DomainEventService {
         float aggregatePrediction = (stChoice + (float) ltChoice) / 2;
 
 
-
-
         // 2. Carry out action by using the WebClient to trigger rescaling
         // Target parallelism which has been calculated from previous step (TO BE DONE)
-        int targetParallelism = 3;
+        int targetParallelism = 1; // default value
         boolean rescale = false;
-        log.info("<<-- Start triggering Flink rescale  -->>");
-        log.info("TargetParallelism: " + targetParallelism);
 
         // Check application.yml file if the Flink props match to the Flink job deployment
         // Use Postman to get the new values if required
         // 2.1 Create Savepoint for the job
-        // TODO: Condition should be adjusted
-
 
         log.info("Evaluate Metrics");
         // Scale Up
@@ -115,7 +117,7 @@ public class DomainEventServiceImpl implements DomainEventService {
                 metricReported.getMemoryUsage() > 0.9 ||
                 metricReported.getMaxJobLatency() > 500) {
             log.info("Scale Up, Get higher parallelism for predicted load : " + aggregatePrediction );
-            targetParallelism = getTargetParallelism(metricReported, aggregatePrediction, true); // Response from DB
+            targetParallelism = getTargetParallelism(metricReported, aggregatePrediction, true).block(); // Response from DB
             rescale = false; // Should be true, left false for testing
 
         }
@@ -126,14 +128,17 @@ public class DomainEventServiceImpl implements DomainEventService {
                 metricReported.getMaxJobLatency() < 100) {
             log.info("Scale Down, Get lower parallelism for predicted load :" + aggregatePrediction);
 
-            //TODO: request from performance table parallelism for predicted load
-            targetParallelism = getTargetParallelism(metricReported, aggregatePrediction, false); // Response from DB
+            // Request from performance table parallelism for predicted load
+            targetParallelism = getTargetParallelism(metricReported, aggregatePrediction, false).block(); // Response from DB
             rescale = false; // Should be true, left false for testing
 
         }
 
         if(rescale) {
+            log.info("<<-- Start triggering Flink rescale  -->>");
+            log.info("TargetParallelism: " + targetParallelism);
             int finalTargetParallelism = targetParallelism;
+            int finalTargetParallelism1 = targetParallelism;
             return this.createFlinkSavepoint(this.flinkProps.getJobId(), this.flinkProps.getSavepointDirectory(), true)
                     // 2.2 Get savepoint path using the received request id
                     // Wait with the request for 10 seconds so that the savepoint can complete
@@ -149,7 +154,24 @@ public class DomainEventServiceImpl implements DomainEventService {
                     })
                     .flatMap(flinkRunJobResponse -> {
                         log.info("The job has been started successfully: " + flinkRunJobResponse.toString());
-                        return Mono.empty();
+                        LocalDateTime currentDateTime = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
+                        MetricTriggerPredictionsSnapshot metricTriggerPredictionsSnapshot = new MetricTriggerPredictionsSnapshot(flinkRunJobResponse.getJobId(), currentDateTime, metricReported, shortTermPrediction, longTermPrediction, finalTargetParallelism);
+                        this.predictionCacheService.cacheSnapshot(metricTriggerPredictionsSnapshot);
+
+                        ClusterPerformanceBenchmark clusterPerformanceBenchmark = ClusterPerformanceBenchmark.builder()
+                                .parallelism(finalTargetParallelism1)
+                                .createdDate(currentDateTime)
+                                .numTaskmanagerPods(finalTargetParallelism1)
+                                .maxRate((int) metricTriggerPredictionsSnapshot.getMetricTrigger().getKafkaMessagesPerSecond())
+                                .build();
+
+                        return this.clusterPerformanceBenchmarkRepository.findFirstByParallelism(finalTargetParallelism1)
+                                .switchIfEmpty(this.clusterPerformanceBenchmarkRepository.save(clusterPerformanceBenchmark))
+                                .flatMap(clusterPerformanceBenchmark1 -> {
+                                    log.error("Entry for Parallelism already existing in the database. Hence no new entry has been created: " + finalTargetParallelism1);
+                                    return Mono.empty();
+                                });
+//                        return Mono.empty();
                     })
                     .onErrorResume(throwable -> {
                         log.error("Flink Rescaling has failed: ", throwable);
@@ -164,29 +186,53 @@ public class DomainEventServiceImpl implements DomainEventService {
         //        this.clusterPerformanceBenchmarkRepository.save(clusterPerformanceBenchmark);
     }
 
-    public int getTargetParallelism(MetricReported metricReported, float aggregatePrediction, boolean ScaleUp) {
-
+    public Mono<Integer> getTargetParallelism(MetricReported metricReported, float aggregatePrediction, boolean ScaleUp) {
+        log.debug("getTargetParallelism() ");
+        log.debug("aggregatePrediction: " + aggregatePrediction);
         //TODO: request from performance table parallelism for predicted load
         // above = SELECT TOP (1) FROM mytable WHERE MaxLoad < aggregatePrediction ORDER BY MaxLoad DESC
         // above = SELECT TOP (1) FROM mytable WHERE MaxLoad > aggregatePrediction ORDER BY MaxLoad ASC
+        return this.flinkApiService.getCurrentFlinkClusterParallelism()
+                .flatMap(currentParallel -> {
+                    log.debug("currentParallel: " + currentParallel);
+                    return this.clusterPerformanceBenchmarkRepository.findOptimalParallelism(aggregatePrediction)
+                            .map(above -> {
+                                log.info("Current Flink Parallelism: "+ currentParallel);
+                                log.info("above from DB:" + above);
+                                int newParallel= (int) (currentParallel / metricReported.getKafkaMessagesPerSecond() * aggregatePrediction);
 
-        int currentParallel = 3;
-        int above =3; // Return Value from DB
-        int newParallel= (int) (currentParallel / metricReported.getKafkaMessagesPerSecond() * aggregatePrediction);
+                                if ( above > currentParallel && ScaleUp) {
+                                    newParallel = above;
+                                }
+                                if ( above < currentParallel && !ScaleUp) {
+                                    newParallel = above;
+                                }
+                                return newParallel;
+                            })
+                            // Default to parallelism 1 as the minimum
+                            .switchIfEmpty(Mono.just(1));
+                });
+//        int currentParallel = 1;
+
+
+//        int above =3; // Return Value from DB
+//        int above = this.clusterPerformanceBenchmarkRepository.findOptimalParallelism(aggregatePrediction);
+
+//        int newParallel= (int) (currentParallel / metricReported.getKafkaMessagesPerSecond() * aggregatePrediction);
 
         /**
          * Logic notes to consider:
          *  Above will never be smaller than 1, in fact entry 1 will always be present in DB assuming we start with parallelism 1
-         *  The new parallel value will only be 10 greater than the current parrallel when the current parallel is 10. 
+         *  The new parallel value will only be 10 greater than the current parrallel when the current parallel is 10.
          */
 
-        if ( above > currentParallel && ScaleUp) {
-            newParallel = above;
-        }
-        if ( above < currentParallel && !ScaleUp) {
-            newParallel = above;
-        }
-        return newParallel;
+//        if ( above > currentParallel && ScaleUp) {
+//            newParallel = above;
+//        }
+//        if ( above < currentParallel && !ScaleUp) {
+//            newParallel = above;
+//        }
+//        return newParallel;
     }
 
     public Mono<FlinkSavepointInfoResponse> getFlinkSavepointInfo(String jobId, String triggerId) {
