@@ -14,12 +14,12 @@ cluster-destroy:
 services-install:
 	${MAKE} hdfs-install
 	${MAKE} mpds-install
-	${MAKE} flink-deploy
+	${MAKE} flink-install
 
 services-uninstall:
 	-${MAKE} hdfs-uninstall
 	-${MAKE} mpds-uninstall
-	-${MAKE} flink-stop
+	-${MAKE} flink-uninstall
 
 hdfs-install:
 	./scripts/hdfs-deploy.sh
@@ -56,12 +56,12 @@ flink-push-docker-image:
 	cd docker/flink && \
 	docker push ${FLINK_DOCKER_IMAGE_COVID_ENGINE}
 
-flink-deploy: ${FLINK_DIR}
+flink-install: ${FLINK_DIR}
 	export FLINK_DIR="${FLINK_DIR}" && \
 	export FLINK_DOCKER_IMAGE_COVID_ENGINE="${FLINK_DOCKER_IMAGE_COVID_ENGINE}" && \
-	./scripts/flink-deploy.sh
+	./scripts/flink-install.sh
 
-flink-stop:
+flink-uninstall:
 	kubectl get deployments | awk '/^flink-cluster.*/{ print $$1 }' | \
 		xargs -n 1 kubectl delete deployment
 
