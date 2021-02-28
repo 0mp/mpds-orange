@@ -26,7 +26,7 @@ public class MetricReported extends DomainEvent {
 
     private final float kafkaLag;
 
-    private final int recordsProcessedPerSecond;
+    private final float recordsProcessedPerSecond;
 
     private final float networkInPerSecond;
 
@@ -45,7 +45,7 @@ public class MetricReported extends DomainEvent {
                           @JsonProperty("kafkaTopic") String kafkaTopic,
                           @JsonProperty("flinkTopic") String flinkTopic,
                           @JsonProperty("maxJobLatency") float maxJobLatency,
-                          @JsonProperty("recordsProcessedPerSecond") int recordsProcessedPerSecond,
+                          @JsonProperty("recordsProcessedPerSecond") float recordsProcessedPerSecond,
                           @JsonProperty("networkInPerSecond") float networkInPerSecond,
                           @JsonProperty("networkOutPerSecond") float networkOutPerSecond,
                           @JsonProperty("sinkHealthy") Boolean sinkHealthy,

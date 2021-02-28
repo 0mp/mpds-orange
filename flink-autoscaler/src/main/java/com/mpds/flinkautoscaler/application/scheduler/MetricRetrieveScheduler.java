@@ -56,9 +56,10 @@ public class MetricRetrieveScheduler {
         Mono<PrometheusMetric> cpuMsg = getPrometheusMetric(getCpuUsage(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
         Mono<PrometheusMetric> maxJobLatencyMsg = getPrometheusMetric(getMaxJobLatency(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
         Mono<PrometheusMetric> memMsg = getPrometheusMetric(getMemUsage(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
+        Mono<PrometheusMetric> processedRecordsMsg = getPrometheusMetric(getProcessedRecordsPerSecond(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
 
 
-        return Mono.zip(cpuMsg, kafkaLagMsg, kafkaLoadMsg, maxJobLatencyMsg, memMsg).map(tuple -> {
+        return Mono.zip(cpuMsg, kafkaLagMsg, kafkaLoadMsg, maxJobLatencyMsg, memMsg, processedRecordsMsg).map(tuple -> {
             float cpu=0.0f;
             if(tuple.getT1().getData().getResult().size()>0) {
                 cpu = Float.parseFloat(tuple.getT1().getData().getResult().get(0).getValue()[1].toString());
@@ -82,6 +83,12 @@ public class MetricRetrieveScheduler {
             if(tuple.getT5().getData().getResult().size()>0) {
                 mem = Float.parseFloat(tuple.getT5().getData().getResult().get(0).getValue()[1].toString());
             }
+
+            float processedRecords=0.0f;
+            if(tuple.getT6().getData().getResult().size()>0) {
+                processedRecords = Float.parseFloat(tuple.getT6().getData().getResult().get(0).getValue()[1].toString());
+            }
+
             MetricReported domainEvent = new MetricReported(
                     UUID.randomUUID(),
                     kafkaLoad,
@@ -89,7 +96,7 @@ public class MetricRetrieveScheduler {
                     this.prometheusProps.getSourceTopic(),
                     "",
                     maxJobLatency,
-                    0,
+                    processedRecords,
                     0,
                     0,
                     true,
@@ -163,6 +170,16 @@ public class MetricRetrieveScheduler {
         log.info("getKafkaMessagesPerSecond for dateTime: " + dateTime);
         LinkedMultiValueMap<String, String> lmvn = new LinkedMultiValueMap<>();
         final String PROMETHEUS_QUERY = "sum by ("+this.prometheusProps.getSourceTopic()+") (rate(kafka_server_brokertopicmetrics_messagesinpersec_count[2m]))";
+        lmvn.add("query", PROMETHEUS_QUERY);
+        lmvn.add("time", dateTime);
+        return lmvn;
+    }
+
+    private MultiValueMap<String, String> getProcessedRecordsPerSecond(String dateTime) {
+
+        log.info("getProcessedRecordsPerSecond for dateTime: " + dateTime);
+        LinkedMultiValueMap<String, String> lmvn = new LinkedMultiValueMap<>();
+        final String PROMETHEUS_QUERY = "sum(flink_taskmanager_job_task_numRecordsOutPerSecond)";
         lmvn.add("query", PROMETHEUS_QUERY);
         lmvn.add("time", dateTime);
         return lmvn;
