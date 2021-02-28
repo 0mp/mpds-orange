@@ -13,12 +13,12 @@ cluster-destroy:
 
 services-install:
 	${MAKE} hdfs-install
-	cd ${HELM_DIR} && helm install mpds .
+	${MAKE} mpds-install
 	${MAKE} flink-deploy
 
 services-uninstall:
 	-${MAKE} hdfs-uninstall
-	-helm uninstall mpds
+	-${MAKE} mpds-uninstall
 	-${MAKE} flink-stop
 
 hdfs-install:
@@ -26,6 +26,12 @@ hdfs-install:
 
 hdfs-uninstall:
 	helm uninstall hadoop
+
+mpds-install:
+	cd ${HELM_DIR} && helm install mpds .
+
+mpds-uninstall:
+	helm uninstall mpds
 
 FLINK_DIR=	flink-1.12.1
 FLINK_TARBALL=	${FLINK_DIR}-bin-scala_2.12.tgz
