@@ -3,24 +3,6 @@
 # Variables will overwrite values in each subchart's values.yaml
 
 #######################################
-## Global variables for the flink chart
-flink:
-  ## boolean to enable/disable chart
-  enabled: true
-
-  ## configure number of deployed jobmanagers
-  jobmanager:
-    replicas: 1
-
-  ## configure number of deployed taskmanagers
-  taskmanager:
-    replicas: 3
-
-  ## configure the NodePort for external access
-  ## will be configured automatically if left empty
-  nodePort: 30881
-
-#######################################
 ## Global variables for the kafka chart
 kafka:
   enabled: true

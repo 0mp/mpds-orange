@@ -22,8 +22,6 @@ appVersion: 1.0.0
 dependencies:
   - name: kafka
     condition: kafka.enabled
-  - name: flink
-    condition: flink.enabled
   - name: redis
     condition: redis.enabled
   - name: grafana
