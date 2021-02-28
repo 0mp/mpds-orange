@@ -162,7 +162,7 @@ public class DomainEventServiceImpl implements DomainEventService {
                                 .parallelism(finalTargetParallelism1)
                                 .createdDate(currentDateTime)
                                 .numTaskmanagerPods(finalTargetParallelism1)
-                                .maxRate((int) metricTriggerPredictionsSnapshot.getMetricTrigger().getKafkaMessagesPerSecond())
+                                .maxRate((int) metricReported.getKafkaMessagesPerSecond())
                                 .build();
 
                         return this.clusterPerformanceBenchmarkRepository.findFirstByParallelism(finalTargetParallelism1)
@@ -198,7 +198,7 @@ public class DomainEventServiceImpl implements DomainEventService {
                     return this.clusterPerformanceBenchmarkRepository.findOptimalParallelism(aggregatePrediction)
                             .map(above -> {
                                 log.info("Current Flink Parallelism: "+ currentParallel);
-                                log.info("above from DB:" + above);
+                                log.info("above from DB: " + above);
                                 int newParallel= (int) (currentParallel / metricReported.getKafkaMessagesPerSecond() * aggregatePrediction);
 
                                 if ( above > currentParallel && ScaleUp) {
