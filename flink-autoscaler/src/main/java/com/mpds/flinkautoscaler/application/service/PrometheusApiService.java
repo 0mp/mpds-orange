@@ -16,7 +16,7 @@ public interface PrometheusApiService {
 
     MultiValueMap<String, String> getMemUsage(String dateTime);
 
-    MultiValueMap<String, String> getKafkaMessagesPerSecond(String dateTime, String sourceTopic);
+    MultiValueMap<String, String> getKafkaMessagesPerSecond(String dateTime);
 
     MultiValueMap<String, String> getFlinkNumRecordsOutPerSecond(String dateTime);
 }

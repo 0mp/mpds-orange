@@ -2,6 +2,7 @@ package com.mpds.flinkautoscaler.application.scheduler;
 
 import com.mpds.flinkautoscaler.application.service.PrometheusApiService;
 import com.mpds.flinkautoscaler.domain.model.PrometheusMetric;
+import com.mpds.flinkautoscaler.domain.model.Result;
 import com.mpds.flinkautoscaler.domain.model.events.DomainEvent;
 import com.mpds.flinkautoscaler.domain.model.events.MetricReported;
 import com.mpds.flinkautoscaler.infrastructure.config.PrometheusProps;
@@ -49,7 +50,7 @@ public class MetricRetrieveScheduler {
         LocalDateTime currentDateTime = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
         String currentDateTimeString = currentDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'"));
 
-        Mono<PrometheusMetric> kafkaLoadMsg = prometheusApiService.getPrometheusMetric(prometheusApiService.getKafkaMessagesPerSecond(currentDateTimeString, prometheusProps.getSourceTopic())).subscribeOn(Schedulers.boundedElastic());
+        Mono<PrometheusMetric> kafkaLoadMsg = prometheusApiService.getPrometheusMetric(prometheusApiService.getKafkaMessagesPerSecond(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
         Mono<PrometheusMetric> kafkaLagMsg = prometheusApiService.getPrometheusMetric(prometheusApiService.getKafkaLag(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
         Mono<PrometheusMetric> cpuMsg = prometheusApiService.getPrometheusMetric(prometheusApiService.getCpuUsage(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
         Mono<PrometheusMetric> maxJobLatencyMsg = prometheusApiService.getPrometheusMetric(prometheusApiService.getMaxJobLatency(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
@@ -68,7 +69,13 @@ public class MetricRetrieveScheduler {
             }
             float kafkaLoad=0.0f;
             if(tuple.getT3().getData().getResult().size()>0) {
-                kafkaLoad = Float.parseFloat(tuple.getT3().getData().getResult().get(0).getValue()[1].toString());
+//                kafkaLoad = Float.parseFloat(tuple.getT3().getData().getResult().get(0).getValue()[1].toString());
+
+                for(Result result : tuple.getT3().getData().getResult()) {
+                    if(this.prometheusProps.getSourceTopic().equalsIgnoreCase(result.getMetric().getTopic())) {
+                        kafkaLoad = Float.parseFloat(result.getValue()[1].toString());
+                    }
+                }
             }
 
             float maxJobLatency=0.0f;

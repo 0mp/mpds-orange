@@ -83,11 +83,11 @@ public class PrometheusApiServiceImpl implements PrometheusApiService {
     }
 
     @Override
-    public MultiValueMap<String, String> getKafkaMessagesPerSecond(String dateTime, String sourceTopic) {
+    public MultiValueMap<String, String> getKafkaMessagesPerSecond(String dateTime) {
 
         log.debug("getKafkaMessagesPerSecond for dateTime: " + dateTime);
         LinkedMultiValueMap<String, String> lmvn = new LinkedMultiValueMap<>();
-        final String PROMETHEUS_QUERY = "sum by ("+sourceTopic+") (rate(kafka_server_brokertopicmetrics_messagesinpersec_count[2m]))";
+        final String PROMETHEUS_QUERY = "sum by (topic) (rate(kafka_server_brokertopicmetrics_messagesinpersec_count[2m]))";
         lmvn.add("query", PROMETHEUS_QUERY);
         lmvn.add("time", dateTime);
         return lmvn;
