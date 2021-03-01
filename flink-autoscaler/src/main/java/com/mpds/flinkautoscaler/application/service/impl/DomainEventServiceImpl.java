@@ -55,7 +55,7 @@ public class DomainEventServiceImpl implements DomainEventService {
     private final static float UPPERTHRESHOLD = 2;
     private final static float LOWERTHRESHOLD = 0.5f;
 
-    private final static float MAX_SECONDS_TO_PROCESS_LAG = 20;
+    private final static float MAX_SECONDS_TO_PROCESS_LAG = 15;
     private final static float MAX_CPU_UTILIZATION = 60;
     private final static float MAX_MEMORY_USAGE = 0.9f;
 
@@ -277,7 +277,7 @@ public class DomainEventServiceImpl implements DomainEventService {
                     setActualParallelism(targetParallelism);
                     LocalDateTime currentDateTime = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
                     MetricTriggerPredictionsSnapshot metricTriggerPredictionsSnapshot = new MetricTriggerPredictionsSnapshot(flinkRunJobResponse.getJobId(), currentDateTime, metricReported, shortTermPrediction, longTermPrediction, targetParallelism);
-//                                        this.predictionCacheService.cacheSnapshot(metricTriggerPredictionsSnapshot);
+                                        this.predictionCacheService.cacheSnapshot(metricTriggerPredictionsSnapshot);
 
                     ClusterPerformanceBenchmark clusterPerformanceBenchmark = ClusterPerformanceBenchmark.builder()
                             .parallelism(targetParallelism)
@@ -285,13 +285,13 @@ public class DomainEventServiceImpl implements DomainEventService {
                             .numTaskmanagerPods(targetParallelism)
                             .maxRate((int) metricReported.getKafkaMessagesPerSecond())
                             .build();
-                    return this.clusterPerformanceBenchmarkRepository.findFirstByParallelism(targetParallelism)
-                            .switchIfEmpty(this.clusterPerformanceBenchmarkRepository.save(clusterPerformanceBenchmark))
-                            .flatMap(clusterPerformanceBenchmark1 -> {
-                                log.error("Entry for Parallelism already existing in the database. Hence no new entry has been created: " + targetParallelism);
-                                return Mono.empty();
-                            });
-//                        return Mono.empty();
+//                    return this.clusterPerformanceBenchmarkRepository.findFirstByParallelism(targetParallelism)
+//                            .switchIfEmpty(this.clusterPerformanceBenchmarkRepository.save(clusterPerformanceBenchmark))
+//                            .flatMap(clusterPerformanceBenchmark1 -> {
+//                                log.error("Entry for Parallelism already existing in the database. Hence no new entry has been created: " + targetParallelism);
+//                                return Mono.empty();
+//                            });
+                        return Mono.empty();
                 })
                 .onErrorResume(throwable -> {
                     log.error("Flink Rescaling has failed: ", throwable);
@@ -358,9 +358,9 @@ public class DomainEventServiceImpl implements DomainEventService {
 
     public int calculateOnEmpty(int currentParallel, boolean scaleUp){
         if(scaleUp){
-            return currentParallel++;
+            return ++currentParallel;
         } else if (currentParallel > 1){
-            return currentParallel--;
+            return --currentParallel;
         }
         return currentParallel;
     }

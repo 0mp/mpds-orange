@@ -4,7 +4,7 @@ import org.springframework.boot.autoconfigure.cache.CacheManagerCustomizer;
 import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
+import java.util.Arrays;
 
 @Component
 public class CacheCustomizer implements CacheManagerCustomizer<ConcurrentMapCacheManager> {
@@ -16,6 +16,6 @@ public class CacheCustomizer implements CacheManagerCustomizer<ConcurrentMapCach
 
     @Override
     public void customize(ConcurrentMapCacheManager cacheManager) {
-        cacheManager.setCacheNames(Collections.singletonList(PREDICTION_CACHE));
+        cacheManager.setCacheNames(Arrays.asList(PREDICTION_CACHE, TRIGGER_PREDICTIONS_SNAPSHOT_CACHE));
     }
 }
