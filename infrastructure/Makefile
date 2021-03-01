@@ -84,6 +84,17 @@ flink-get-web-ui:
 	node_ip=$$(kubectl get --namespace default -o jsonpath="{.status.loadBalancer.ingress[0].ip}" services flink-cluster-rest) && \
 	echo "http://$$node_ip:$$node_port"
 
+flink-run-job-iot:
+	export FLINK_DIR="${FLINK_DIR}" && \
+	export FLINK_JOB_JAR="../iot-simulator/iot_vehicles_experiment/producer/target/producer-1.0-SNAPSHOT.jar" && \
+	./scripts/flink-run-job.sh \
+	$$(cat ../iot-simulator/args)
+
+flink-stop-job:
+	${FLINK_DIR}/bin/flink list \
+		--target kubernetes-session \
+		-Dkubernetes.cluster-id=flink-cluster
+
 kafka-show-brokers:
 	node_ip=$$(gcloud compute instances list --format="value(EXTERNAL_IP)" | head -n 1) && \
 	kafkacat -b $$node_ip:31090 -L | grep '  broker'
