@@ -28,6 +28,7 @@ echo quit | "$flink_dir/bin/kubernetes-session.sh" \
 	-Dkubernetes.cluster-id=flink-cluster \
 	-Dkubernetes.container.image="$docker_image" \
 	-Dkubernetes.container.image.pull-policy=Always \
+	-Dkubernetes.jobmanager.cpu=2.0 \
 	-Dexecution.attached=true \
 	-Dkubernetes.jobmanager.annotations=prometheus.io/scrape:'true',prometheus.io/port:'9999' \
 	-Dkubernetes.taskmanager.annotations=prometheus.io/scrape:'true',prometheus.io/port:'9999' \
