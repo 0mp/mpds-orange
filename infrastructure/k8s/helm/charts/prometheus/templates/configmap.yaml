@@ -16,8 +16,9 @@ data:
           summary: Fewer Flink TaskManagers than expected are running.
   prometheus.yml: |-
     global:
-      scrape_interval: 1s
-      evaluation_interval: 1s
+      scrape_interval: 5s
+      scrape_timeout: 5s
+      evaluation_interval: 5s
 
     rule_files:
       - flink.rules.yml
