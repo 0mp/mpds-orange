@@ -15,11 +15,13 @@ services-install:
 	${MAKE} hdfs-install
 	${MAKE} mpds-install
 	${MAKE} flink-install
+	${MAKE} pushgateway-install
 
 services-uninstall:
 	-${MAKE} hdfs-uninstall
 	-${MAKE} mpds-uninstall
 	-${MAKE} flink-uninstall
+	-${MAKE} pushgateway-uninstall
 
 hdfs-install:
 	./scripts/hdfs-deploy.sh
