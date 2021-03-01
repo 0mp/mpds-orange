@@ -18,4 +18,6 @@ public class FlinkProps {
     private String programArgs;
 
     private String savepointDirectory;
+
+    private int cooldownDuration;
 }
