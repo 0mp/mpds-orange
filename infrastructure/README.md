@@ -131,7 +131,7 @@ echo http://$NODE_IP:$NODE_PORT
 Submit the Flink job and start the application, e.g.:
 
 - Parallelism: `1`
-- Program Arguments: `--statebackend.default false --checkpoint hdfs://hadoop-hdfs-namenode:8020/flink/checkpoints --checkpoint.interval 300000`
+- Program Arguments: `--statebackend.default false --checkpoint hdfs://hadoop-hdfs-namenode:8020/flink/checkpoints --checkpoint.interval 600000`
 - Savepoint Path: `hdfs://hadoop-hdfs-namenode:8020/flink/savepoints/savepoint-040a83-73e0bac50483`
 
 ## Flink DSP Engine

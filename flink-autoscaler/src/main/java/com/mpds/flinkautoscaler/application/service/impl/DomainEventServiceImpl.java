@@ -20,6 +20,7 @@ import com.mpds.flinkautoscaler.port.adapter.rest.response.FlinkSavepointRespons
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -165,12 +166,29 @@ public class DomainEventServiceImpl implements DomainEventService {
                             return this.createFlinkSavepoint(this.flinkProps.getJobId(), this.flinkProps.getSavepointDirectory(), true)
                                     // 2.2 Get savepoint path using the received request id
                                     // Wait with the request for 10 seconds so that the savepoint can complete
-                                    .delayElement(Duration.ofSeconds(10))
+                                    .delayElement(Duration.ofSeconds(5))
                                     .flatMap(flinkSavepointResponse -> {
                                         log.info("flinkSavepointResponse: " + flinkSavepointResponse.toString());
-                                        return getFlinkSavepointInfo(this.flinkProps.getJobId(), flinkSavepointResponse.getRequestId());
+                                        return getFlinkSavepointInfo(this.flinkProps.getJobId(), flinkSavepointResponse.getRequestId())
+                                                .flatMap(flinkSavepointInfoResponse -> {
+                                                    if(flinkSavepointInfoResponse.getOperation().getLocation()==null) {
+                                                        log.error("Flink saveppoint operation is null for Flink Request ID:  " + flinkSavepointResponse.getRequestId());
+                                                        log.debug(("Trying to get savepoint again...." ));
+                                                        return Mono.empty()
+                                                                .delayElement(Duration.ofSeconds(10))
+                                                                .flatMap(o -> getFlinkSavepointInfo(this.flinkProps.getJobId(), flinkSavepointResponse.getRequestId())
+                                                                .flatMap(flinkSavepointInfoResponse1 -> {
+                                                                    if(StringUtils.isEmpty(flinkSavepointInfoResponse1.getOperation().getLocation())) {
+                                                                        log.error("Second call for savepoint path failed: " + flinkSavepointInfoResponse1.toString());
+                                                                        return Mono.just(flinkSavepointInfoResponse1);
+                                                                    }
+                                                                    return Mono.just(flinkSavepointInfoResponse1);
+                                                                }));
+                                                    }
+                                                    return Mono.just(flinkSavepointInfoResponse);
+                                                });
                                     })
-                                    .delayElement(Duration.ofSeconds(60))
+//                                    .delayElement(Duration.ofSeconds(60))
                                     // 2.3 Start the job with the new parallelism using the savepoint path created from before
                                     .flatMap(flinkSavepointInfoResponse -> {
                                         log.info("flinkSavepointInfoResponse: " + flinkSavepointInfoResponse.toString());
