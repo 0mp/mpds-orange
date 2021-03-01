@@ -299,7 +299,7 @@ public class DomainEventServiceImpl implements DomainEventService {
                 }).then();
     }
 
-    public Mono<Integer> getTargetParallelism(MetricReported metricReported, float aggregatePrediction, boolean ScaleUp) {
+    public Mono<Integer> getTargetParallelism(MetricReported metricReported, float aggregatePrediction, boolean scaleUp) {
         log.debug("getTargetParallelism() ");
         log.debug("aggregatePrediction: " + aggregatePrediction);
         //TODO: request from performance table parallelism for predicted load
@@ -313,17 +313,17 @@ public class DomainEventServiceImpl implements DomainEventService {
                             .map(above -> {
                                 log.info("Current Flink Parallelism: " + currentParallel);
                                 log.info("above from DB: " + above);
-                                int newParallel = calculateNewParallelism(currentParallel, metricReported, aggregatePrediction);
+                                int newParallel = currentParallel;
 
-                                if (above > currentParallel && ScaleUp) {
+                                if (above > currentParallel && scaleUp) {
                                     newParallel = above;
                                 }
-                                if (above < currentParallel && !ScaleUp) {
+                                if (above < currentParallel && !scaleUp) {
                                     newParallel = above;
                                 }
                                 return newParallel;
                             })
-                            .switchIfEmpty(Mono.just(calculateNewParallelism(currentParallel, metricReported, aggregatePrediction)));
+                            .switchIfEmpty(Mono.just(calculateOnEmpty(currentParallel, scaleUp)));
                     // Default to parallelism 1 as the minimum
 //                            .switchIfEmpty(Mono.just(1));
                 });
@@ -354,6 +354,15 @@ public class DomainEventServiceImpl implements DomainEventService {
         log.info("currentParallel: " + currentParallel + " --- Kafka Messages per second: " + metricReported.getKafkaMessagesPerSecond() + " -- aggregatePrediction: "+ aggregatePrediction);
         log.info("--Calculated new parallelism: " +(int) (currentParallel / metricReported.getKafkaMessagesPerSecond() * aggregatePrediction));
         return  (int) Math.ceil((currentParallel / metricReported.getKafkaMessagesPerSecond() * aggregatePrediction));
+    }
+
+    public int calculateOnEmpty(int currentParallel, boolean scaleUp){
+        if(scaleUp){
+            return currentParallel++;
+        } else if (currentParallel > 1){
+            return currentParallel--;
+        }
+        return currentParallel;
     }
 
     public Mono<FlinkSavepointInfoResponse> getFlinkSavepointInfo(String jobId, String triggerId) {
