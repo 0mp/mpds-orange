@@ -42,6 +42,9 @@ pushgateway-install:
 pushgateway-uninstall:
 	helm uninstall pushgateway
 
+pushgateway-upgrade:
+	cd ${HELM_DIR}/charts/pushgateway && helm upgrade pushgateway .
+
 FLINK_DIR=	flink-1.12.1
 FLINK_TARBALL=	${FLINK_DIR}-bin-scala_2.12.tgz
 FLINK_DOCKER_IMAGE_COVID_ENGINE=	eu.gcr.io/${PROJECT_NAME}/covid-engine:2.3.1
