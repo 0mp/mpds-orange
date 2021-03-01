@@ -170,7 +170,12 @@ public class DomainEventServiceImpl implements DomainEventService {
                         // Scale Up
                         float cpu = metricReported.getCpuUtilization();
                         float memory = metricReported.getMemoryUsage();
-                        if (metricReported.getKafkaLag() > kafkaMessagesPerSecond * MAX_SECONDS_TO_PROCESS_LAG ||
+                        float lag = metricReported.getKafkaLag();
+                        if(Double.isNaN(lag)){
+                            log.info("lag is NaN");
+                            lag = 0;
+                        }
+                        if (lag > kafkaMessagesPerSecond * MAX_SECONDS_TO_PROCESS_LAG ||
                                  cpu > MAX_CPU_UTILIZATION ||
                                  memory > MAX_MEMORY_USAGE ) {
 //                            metricReported.getMaxJobLatency() > 500
@@ -181,7 +186,7 @@ public class DomainEventServiceImpl implements DomainEventService {
                             rescale = true; // Should be true, left false for testing
                         }
                         // Scale Down
-                        if (metricReported.getKafkaLag() < kafkaMessagesPerSecond * MIN_SECONDS_TO_PROCESS_LAG &&
+                        if (lag < kafkaMessagesPerSecond * MIN_SECONDS_TO_PROCESS_LAG &&
                                 metricReported.getCpuUtilization() < MIN_CPU_UTILIZATION &&
                                 metricReported.getMemoryUsage() < MIN_MEMORY_USAGE ) {
 //                            && metricReported.getMaxJobLatency() < 100
