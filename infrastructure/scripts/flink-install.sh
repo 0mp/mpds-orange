@@ -9,14 +9,14 @@ if [ ! -d "$FLINK_DIR" ]; then
 	exit 1
 fi
 
-if [ "$FLINK_DOCKER_IMAGE_COVID_ENGINE" = "" ]; then
+if [ "$FLINK_DOCKER_IMAGE" = "" ]; then
 	set +u
-	echo "$0: FLINK_DOCKER_IMAGE_COVID_ENGINE is not set" >&2
+	echo "$0: FLINK_DOCKER_IMAGE is not set" >&2
 	exit 1
 fi
 
 flink_dir="$FLINK_DIR"
-docker_image="$FLINK_DOCKER_IMAGE_COVID_ENGINE"
+docker_image="$FLINK_DOCKER_IMAGE"
 
 if ! kubectl describe serviceaccounts | grep -q '^Name:                flink-service-account$'; then
 	kubectl create serviceaccount flink-service-account
