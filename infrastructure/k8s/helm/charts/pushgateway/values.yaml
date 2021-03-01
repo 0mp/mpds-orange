@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 
 # Provide a name in place of prometheus-pushgateway for `app:` labels
-nameOverride: ""
+nameOverride: "pushgateway"
 
 # Provide a name to substitute for the full names of resources
 fullnameOverride: ""
