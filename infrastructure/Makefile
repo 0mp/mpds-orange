@@ -72,3 +72,7 @@ flink-get-web-ui:
 	node_port=$$(kubectl get --namespace default -o jsonpath="{.spec.ports[0].port}" services flink-cluster-rest) && \
 	node_ip=$$(kubectl get --namespace default -o jsonpath="{.status.loadBalancer.ingress[0].ip}" services flink-cluster-rest) && \
 	echo "http://$$node_ip:$$node_port"
+
+kafka-show-brokers:
+	node_ip=$$(gcloud compute instances list --format="value(EXTERNAL_IP)" | head -n 1) && \
+	kafkacat -b $$node_ip:31090 -L | grep '  broker'
