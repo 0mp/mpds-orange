@@ -17,7 +17,6 @@ import com.mpds.flinkautoscaler.port.adapter.rest.request.FlinkSavepointRequest;
 import com.mpds.flinkautoscaler.port.adapter.rest.response.FlinkRunJobResponse;
 import com.mpds.flinkautoscaler.port.adapter.rest.response.FlinkSavepointInfoResponse;
 import com.mpds.flinkautoscaler.port.adapter.rest.response.FlinkSavepointResponse;
-import jdk.jfr.Threshold;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -56,11 +55,11 @@ public class DomainEventServiceImpl implements DomainEventService {
     private final static float UPPERTHRESHOLD = 2;
     private final static float LOWERTHRESHOLD = 0.5f;
 
-    private final static float MAX_SECONDS_TO_PROCESS_LAG = 10;
+    private final static float MAX_SECONDS_TO_PROCESS_LAG = 20;
     private final static float MAX_CPU_UTILIZATION = 60;
     private final static float MAX_MEMORY_USAGE = 0.9f;
 
-    private final static float MIN_SECONDS_TO_PROCESS_LAG = 3;
+    private final static float MIN_SECONDS_TO_PROCESS_LAG = 5;
     private final static float MIN_CPU_UTILIZATION = 0.4f;
     private final static float MIN_MEMORY_USAGE = 0.5f;
 
@@ -182,7 +181,7 @@ public class DomainEventServiceImpl implements DomainEventService {
                             rescale = true; // Should be true, left false for testing
                         }
                         // Scale Down
-                        if (metricReported.getKafkaLag() < MIN_SECONDS_TO_PROCESS_LAG &&
+                        if (metricReported.getKafkaLag() < kafkaMessagesPerSecond * MIN_SECONDS_TO_PROCESS_LAG &&
                                 metricReported.getCpuUtilization() < MIN_CPU_UTILIZATION &&
                                 metricReported.getMemoryUsage() < MIN_MEMORY_USAGE ) {
 //                            && metricReported.getMaxJobLatency() < 100
