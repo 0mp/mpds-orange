@@ -1,5 +1,6 @@
 package com.mpds.flinkautoscaler.application.service.impl;
 
+import com.mpds.flinkautoscaler.application.constants.FlinkConstants;
 import com.mpds.flinkautoscaler.application.constants.PredictionConstants;
 import com.mpds.flinkautoscaler.application.service.DomainEventService;
 import com.mpds.flinkautoscaler.application.service.FlinkApiService;
@@ -21,6 +22,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -45,10 +47,14 @@ public class DomainEventServiceImpl implements DomainEventService {
     private final String FLINK_SAVEPOINT_INFO_PATH = "/jobs/{jobId}/savepoints/{triggerId}";
     private final String FLINK_JAR_RUN_PATH = "/jars/{jarId}/run";
 
+    public LocalDateTime RESCALE_COOLDOWN;
+
+
+
     public DomainEventServiceImpl(FlinkProps flinkProps, ClusterPerformanceBenchmarkRepository clusterPerformanceBenchmarkRepository, PredictionCacheService predictionCacheService, FlinkApiService flinkApiService) {
         this.flinkProps = flinkProps;
         this.clusterPerformanceBenchmarkRepository = clusterPerformanceBenchmarkRepository;
-        this.predictionCacheService=predictionCacheService;
+        this.predictionCacheService = predictionCacheService;
         this.webClient = WebClient.builder()
                 .baseUrl(flinkProps.getBaseUrl())
                 .build();
@@ -69,11 +75,11 @@ public class DomainEventServiceImpl implements DomainEventService {
 //                })
         double ltChoice = metricReported.getKafkaMessagesPerSecond();
         LongtermPredictionReported longTermPrediction = (LongtermPredictionReported) this.predictionCacheService.getPredictionFrom(PredictionConstants.LONG_TERM_PREDICTION_EVENT_NAME);
-        if(longTermPrediction!=null) {
-            log.info("Current LT prediction: "+ longTermPrediction.toString());
+        if (longTermPrediction != null) {
+            log.info("Current LT prediction: " + longTermPrediction.toString());
             double ltChoiceTemp = longTermPrediction.getPredictedWorkloads().stream().mapToInt(predictedWorkload -> (int) predictedWorkload.getValue()).average().orElse(0);
             if (ltChoiceTemp < metricReported.getKafkaMessagesPerSecond() * 2 &&
-                    ltChoiceTemp > metricReported.getKafkaMessagesPerSecond() /2)   {
+                    ltChoiceTemp > metricReported.getKafkaMessagesPerSecond() / 2) {
                 log.info("LT prediction in bounds");
                 ltChoice = ltChoiceTemp;
             }
@@ -84,10 +90,10 @@ public class DomainEventServiceImpl implements DomainEventService {
         ShorttermPredictionReported shortTermPrediction = (ShorttermPredictionReported) this.predictionCacheService.getPredictionFrom(PredictionConstants.SHORT_TERM_PREDICTION_EVENT_NAME);
 
         float stChoice = metricReported.getKafkaMessagesPerSecond();
-        if(shortTermPrediction!=null) {
-            log.info("Current ST prediction: "+ shortTermPrediction.toString());
+        if (shortTermPrediction != null) {
+            log.info("Current ST prediction: " + shortTermPrediction.toString());
             if (shortTermPrediction.getPredictedWorkload() < metricReported.getKafkaMessagesPerSecond() * 2 &&
-                    shortTermPrediction.getPredictedWorkload() > metricReported.getKafkaMessagesPerSecond() /2)   {
+                    shortTermPrediction.getPredictedWorkload() > metricReported.getKafkaMessagesPerSecond() / 2) {
                 log.info("ST prediction in bounds");
                 stChoice = shortTermPrediction.getPredictedWorkload();
             }
@@ -95,91 +101,114 @@ public class DomainEventServiceImpl implements DomainEventService {
             log.info("No ST prediction found in cache!");
         }
 
-
         // Determine Weight prefence of prediction models
         log.info("Aggregate Predictions");
         float aggregatePrediction = (stChoice + (float) ltChoice) / 2;
-
-
-        // 2. Carry out action by using the WebClient to trigger rescaling
-        // Target parallelism which has been calculated from previous step (TO BE DONE)
-        int targetParallelism = 1; // default value
-        boolean rescale = false;
 
         // Check application.yml file if the Flink props match to the Flink job deployment
         // Use Postman to get the new values if required
         // 2.1 Create Savepoint for the job
 
-        log.info("Evaluate Metrics");
-        // Scale Up
-        if (metricReported.getKafkaLag() > metricReported.getKafkaMessagesPerSecond() *2 ||
-                metricReported.getCpuUtilization() > 0.6 ||
-                metricReported.getMemoryUsage() > 0.9 ||
-                metricReported.getMaxJobLatency() > 500) {
-            log.info("Scale Up, Get higher parallelism for predicted load : " + aggregatePrediction );
-            targetParallelism = getTargetParallelism(metricReported, aggregatePrediction, true).block(); // Response from DB
-            rescale = false; // Should be true, left false for testing
+        return this.flinkApiService.getFlinkState().publishOn(Schedulers.boundedElastic())
+                .flatMap(flinkState -> {
+                    // 2. Carry out action by using the WebClient to trigger rescaling
+                    // Target parallelism which has been calculated from previous step (TO BE DONE)
+                    int targetParallelism = 1; // default value
+                    boolean rescale = false;
 
-        }
-        // Scale Down
-        if (metricReported.getKafkaLag() < metricReported.getKafkaMessagesPerSecond()  &&
-                metricReported.getCpuUtilization() < 0.4 &&
-                metricReported.getMemoryUsage() < 0.5 &&
-                metricReported.getMaxJobLatency() < 100) {
-            log.info("Scale Down, Get lower parallelism for predicted load :" + aggregatePrediction);
+                    if (FlinkConstants.RUNNING_STATE.equals(flinkState)) {
+                        log.info("Evaluate Metrics");
+                        // Scale Up
+                        if (metricReported.getKafkaLag() > metricReported.getKafkaMessagesPerSecond() * 2 ||
+                                metricReported.getCpuUtilization() > 0.6 ||
+                                metricReported.getMemoryUsage() > 0.9 ) {
+//                            metricReported.getMaxJobLatency() > 500
+                            log.info("Scale Up, Get higher parallelism for predicted load : " + aggregatePrediction);
+                            if (metricReported.getKafkaMessagesPerSecond() != 0) {
+                                targetParallelism = getTargetParallelism(metricReported, aggregatePrediction, true).block(); // Response from DB
+                            }
+                            rescale = true; // Should be true, left false for testing
+                        }
+                        // Scale Down
+                        if (metricReported.getKafkaLag() < metricReported.getKafkaMessagesPerSecond() &&
+                                metricReported.getCpuUtilization() < 0.4 &&
+                                metricReported.getMemoryUsage() < 0.5 ) {
+//                            && metricReported.getMaxJobLatency() < 100
+                            log.info("Scale Down, Get lower parallelism for predicted load :" + aggregatePrediction);
 
-            // Request from performance table parallelism for predicted load
-            targetParallelism = getTargetParallelism(metricReported, aggregatePrediction, false).block(); // Response from DB
-            rescale = false; // Should be true, left false for testing
+                            // Request from performance table parallelism for predicted load
+                            if (metricReported.getKafkaMessagesPerSecond() != 0) {
+                                targetParallelism = getTargetParallelism(metricReported, aggregatePrediction, false).block(); // Response from DB
+                            }
 
-        }
+                            rescale = true; // Should be true, left false for testing
 
-        if(rescale) {
-            log.info("<<-- Start triggering Flink rescale  -->>");
-            log.info("TargetParallelism: " + targetParallelism);
-            int finalTargetParallelism = targetParallelism;
-            int finalTargetParallelism1 = targetParallelism;
-            return this.createFlinkSavepoint(this.flinkProps.getJobId(), this.flinkProps.getSavepointDirectory(), true)
-                    // 2.2 Get savepoint path using the received request id
-                    // Wait with the request for 10 seconds so that the savepoint can complete
-                    .delayElement(Duration.ofSeconds(10))
-                    .flatMap(flinkSavepointResponse -> {
-                        log.info("flinkSavepointResponse: " + flinkSavepointResponse.toString());
-                        return getFlinkSavepointInfo(this.flinkProps.getJobId(), flinkSavepointResponse.getRequestId());
-                    })
-                    // 2.3 Start the job with the new parallelism using the savepoint path created from before
-                    .flatMap(flinkSavepointInfoResponse -> {
-                        log.info("flinkSavepointInfoResponse: " + flinkSavepointInfoResponse.toString());
-                        return runFlinkJob(this.flinkProps.getJarId(), this.flinkProps.getJobId(), this.flinkProps.getProgramArgs(), finalTargetParallelism, flinkSavepointInfoResponse.getOperation().getLocation());
-                    })
-                    .flatMap(flinkRunJobResponse -> {
-                        log.info("The job has been started successfully: " + flinkRunJobResponse.toString());
-                        LocalDateTime currentDateTime = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
-                        MetricTriggerPredictionsSnapshot metricTriggerPredictionsSnapshot = new MetricTriggerPredictionsSnapshot(flinkRunJobResponse.getJobId(), currentDateTime, metricReported, shortTermPrediction, longTermPrediction, finalTargetParallelism);
-                        this.predictionCacheService.cacheSnapshot(metricTriggerPredictionsSnapshot);
+                        }
 
-                        ClusterPerformanceBenchmark clusterPerformanceBenchmark = ClusterPerformanceBenchmark.builder()
-                                .parallelism(finalTargetParallelism1)
-                                .createdDate(currentDateTime)
-                                .numTaskmanagerPods(finalTargetParallelism1)
-                                .maxRate((int) metricReported.getKafkaMessagesPerSecond())
-                                .build();
+                        if (rescale) {
+                            log.info("<<-- Start triggering Flink rescale  -->>");
+                            log.info("TargetParallelism: " + targetParallelism);
+                            int finalTargetParallelism = targetParallelism;
+                            int finalTargetParallelism1 = targetParallelism;
 
-                        return this.clusterPerformanceBenchmarkRepository.findFirstByParallelism(finalTargetParallelism1)
-                                .switchIfEmpty(this.clusterPerformanceBenchmarkRepository.save(clusterPerformanceBenchmark))
-                                .flatMap(clusterPerformanceBenchmark1 -> {
-                                    log.error("Entry for Parallelism already existing in the database. Hence no new entry has been created: " + finalTargetParallelism1);
-                                    return Mono.empty();
-                                });
+                            LocalDateTime now = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
+                            log.debug("Now:  "+ now.toString());
+                            int cooldownDuration = 60;
+                            if(RESCALE_COOLDOWN==null ||  Duration.between(RESCALE_COOLDOWN, now).abs().getSeconds() > cooldownDuration) {
+                                log.debug("Resetting RESCALE COOLDOW: " + now.toString());
+                                RESCALE_COOLDOWN = now;
+                            } else {
+                                log.info(" ++ + ++ + + +  BLOCKING RESCALE DUE TO COOLDOWN + + + + ++ +");
+                                log.info("Rescale Cooldown: " + RESCALE_COOLDOWN.toString());
+                                return Mono.empty();
+                            }
+                            return this.createFlinkSavepoint(this.flinkProps.getJobId(), this.flinkProps.getSavepointDirectory(), true)
+                                    // 2.2 Get savepoint path using the received request id
+                                    // Wait with the request for 10 seconds so that the savepoint can complete
+                                    .delayElement(Duration.ofSeconds(10))
+                                    .flatMap(flinkSavepointResponse -> {
+                                        log.info("flinkSavepointResponse: " + flinkSavepointResponse.toString());
+                                        return getFlinkSavepointInfo(this.flinkProps.getJobId(), flinkSavepointResponse.getRequestId());
+                                    })
+                                    .delayElement(Duration.ofSeconds(60))
+                                    // 2.3 Start the job with the new parallelism using the savepoint path created from before
+                                    .flatMap(flinkSavepointInfoResponse -> {
+                                        log.info("flinkSavepointInfoResponse: " + flinkSavepointInfoResponse.toString());
+                                        return runFlinkJob(this.flinkProps.getJarId(), this.flinkProps.getJobId(), this.flinkProps.getProgramArgs(), finalTargetParallelism, flinkSavepointInfoResponse.getOperation().getLocation());
+                                    })
+                                    .flatMap(flinkRunJobResponse -> {
+                                        log.info("The job has been started successfully: " + flinkRunJobResponse.toString());
+                                        LocalDateTime currentDateTime = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
+                                        MetricTriggerPredictionsSnapshot metricTriggerPredictionsSnapshot = new MetricTriggerPredictionsSnapshot(flinkRunJobResponse.getJobId(), currentDateTime, metricReported, shortTermPrediction, longTermPrediction, finalTargetParallelism);
+//                                        this.predictionCacheService.cacheSnapshot(metricTriggerPredictionsSnapshot);
+
+                                        ClusterPerformanceBenchmark clusterPerformanceBenchmark = ClusterPerformanceBenchmark.builder()
+                                                .parallelism(finalTargetParallelism1)
+                                                .createdDate(currentDateTime)
+                                                .numTaskmanagerPods(finalTargetParallelism1)
+                                                .maxRate((int) metricReported.getKafkaMessagesPerSecond())
+                                                .build();
+
+                                        return this.clusterPerformanceBenchmarkRepository.findFirstByParallelism(finalTargetParallelism1)
+                                                .switchIfEmpty(this.clusterPerformanceBenchmarkRepository.save(clusterPerformanceBenchmark))
+                                                .flatMap(clusterPerformanceBenchmark1 -> {
+                                                    log.error("Entry for Parallelism already existing in the database. Hence no new entry has been created: " + finalTargetParallelism1);
+                                                    return Mono.empty();
+                                                });
 //                        return Mono.empty();
-                    })
-                    .onErrorResume(throwable -> {
-                        log.error("Flink Rescaling has failed: ", throwable);
-                        return Mono.error(throwable);
-                    }).then();
-        } else {
-            return Mono.empty();
-        }
+                                    })
+                                    .onErrorResume(throwable -> {
+                                        log.error("Flink Rescaling has failed: ", throwable);
+                                        return Mono.error(throwable);
+                                    }).then();
+                        } else {
+                            return Mono.empty();
+                        }
+                    }
+                    log.info("The Flink was NOT in the state:"  + FlinkConstants.RUNNING_STATE);
+                    return Mono.empty();
+                });
+
         // TODO: Save cluster performance to the Postgres DB
         //        ClusterPerformanceBenchmark clusterPerformanceBenchmark = new ClusterPerformanceBenchmark();
         //        Set all the data and save to db
@@ -197,20 +226,21 @@ public class DomainEventServiceImpl implements DomainEventService {
                     log.debug("currentParallel: " + currentParallel);
                     return this.clusterPerformanceBenchmarkRepository.findOptimalParallelism(aggregatePrediction)
                             .map(above -> {
-                                log.info("Current Flink Parallelism: "+ currentParallel);
+                                log.info("Current Flink Parallelism: " + currentParallel);
                                 log.info("above from DB: " + above);
-                                int newParallel= (int) (currentParallel / metricReported.getKafkaMessagesPerSecond() * aggregatePrediction);
+                                int newParallel = calculateNewParallelism(currentParallel, metricReported, aggregatePrediction);
 
-                                if ( above > currentParallel && ScaleUp) {
+                                if (above > currentParallel && ScaleUp) {
                                     newParallel = above;
                                 }
-                                if ( above < currentParallel && !ScaleUp) {
+                                if (above < currentParallel && !ScaleUp) {
                                     newParallel = above;
                                 }
                                 return newParallel;
                             })
-                            // Default to parallelism 1 as the minimum
-                            .switchIfEmpty(Mono.just(1));
+                            .switchIfEmpty(Mono.just(calculateNewParallelism(currentParallel, metricReported, aggregatePrediction)));
+                    // Default to parallelism 1 as the minimum
+//                            .switchIfEmpty(Mono.just(1));
                 });
 //        int currentParallel = 1;
 
@@ -233,6 +263,12 @@ public class DomainEventServiceImpl implements DomainEventService {
 //            newParallel = above;
 //        }
 //        return newParallel;
+    }
+
+    public int calculateNewParallelism(int currentParallel, MetricReported metricReported, float aggregatePrediction) {
+        log.info("currentParallel: " + currentParallel + " --- Kafka Messages per second: " + metricReported.getKafkaMessagesPerSecond() + " -- aggregatePrediction: "+ aggregatePrediction);
+        log.info("--Calculated new parallelism: " +(int) (currentParallel / metricReported.getKafkaMessagesPerSecond() * aggregatePrediction));
+        return  (int) Math.ceil((currentParallel / metricReported.getKafkaMessagesPerSecond() * aggregatePrediction));
     }
 
     public Mono<FlinkSavepointInfoResponse> getFlinkSavepointInfo(String jobId, String triggerId) {

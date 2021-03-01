@@ -55,6 +55,31 @@ public class FlinkApiServiceImpl implements FlinkApiService {
         }
     }
 
+    @Override
+    public Mono<String> getFlinkState(){
+        log.debug("Getting current Flink state...");
+        return this.flinkWebClient.get()
+                .uri(FLINK_JOB_DETAILS_PATH, this.flinkProps.getJobId())
+                .retrieve()
+                .bodyToMono(String.class)
+                .flatMap(jsonString -> {
+//                    log.debug(jsonString);
+                    String currentFlinkState;
+                    JSONObject root;
+                    try {
+                        root = new JSONObject(jsonString);
+                        currentFlinkState = root.getString(FlinkConstants.JSON_KEY_STATE);
+//            if(!FlinkConstants.RUNNING_STATE.equals(currentFlinkState)) return Mono.error(new IllegalStateException("The Flink job is currently not running!"));
+                        return Mono.just(currentFlinkState);
+                    } catch (JSONException e) {
+                        log.error("JSON object could not be parsed ", e);
+                        return Mono.error(e);
+                    }
+                });
+
+
+    }
+
     private Mono<Integer> getFlinkParallelism(JSONObject jsonObject) {
         log.debug("getFlinkParallelism for: "+ jsonObject.toString());
         int parallelism;

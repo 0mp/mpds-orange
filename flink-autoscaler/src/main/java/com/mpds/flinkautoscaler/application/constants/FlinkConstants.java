@@ -8,4 +8,5 @@ public class FlinkConstants {
 
 
     public static final String RUNNING_STATE="RUNNING";
+    public static final String CANCELED_STATE="CANCELED";
 }

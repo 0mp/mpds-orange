@@ -10,7 +10,6 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import static com.mpds.flinkautoscaler.infrastructure.config.CacheCustomizer.PREDICTION_CACHE;
-import static com.mpds.flinkautoscaler.infrastructure.config.CacheCustomizer.TRIGGER_PREDICTIONS_SNAPSHOT_CACHE;
 
 @Service
 @RequiredArgsConstructor
@@ -31,13 +30,14 @@ public class PredictionCacheServiceImpl implements PredictionCacheService {
     }
 
     @Override
+    @Cacheable(value = "MetricTriggerPredictionsSnapshot")
     public MetricTriggerPredictionsSnapshot getMetricTriggerPredictionsSnapshot(String snapshotCacheKey) {
         log.info("No snapshot was found in the cache with key: " + snapshotCacheKey);
         return null;
     }
 
     @Override
-    @CachePut(value = TRIGGER_PREDICTIONS_SNAPSHOT_CACHE, key = "#metricTriggerPredictionsSnapshot.snapshotCacheKey")
+    @CachePut(value = "MetricTriggerPredictionsSnapshot", key = "#metricTriggerPredictionsSnapshot.snapshotCacheKey")
     public MetricTriggerPredictionsSnapshot cacheSnapshot(MetricTriggerPredictionsSnapshot metricTriggerPredictionsSnapshot) {
         return null;
     }

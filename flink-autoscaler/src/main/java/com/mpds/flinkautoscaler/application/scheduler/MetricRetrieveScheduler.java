@@ -35,10 +35,12 @@ public class MetricRetrieveScheduler {
     private final PrometheusApiService prometheusApiService;
 
 
+
+
     // Every 5 seconds
 //    @Scheduled(fixedDelay = 5000)
     // Every 10 seconds
-    @Scheduled(fixedDelay = 10000)
+    @Scheduled(fixedDelay = 20000)
     public void scheduleMetricRetrieval() {
         log.info("Start retrieving metrics...");
 
