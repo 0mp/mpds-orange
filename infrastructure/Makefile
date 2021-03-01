@@ -33,6 +33,9 @@ mpds-install:
 mpds-uninstall:
 	helm uninstall mpds
 
+mpds-upgrade:
+	cd ${HELM_DIR} && helm upgrade mpds .
+
 FLINK_DIR=	flink-1.12.1
 FLINK_TARBALL=	${FLINK_DIR}-bin-scala_2.12.tgz
 FLINK_DOCKER_IMAGE_COVID_ENGINE=	eu.gcr.io/${PROJECT_NAME}/covid-engine:2.3.1
@@ -66,6 +69,6 @@ flink-uninstall:
 		xargs -n 1 kubectl delete deployment
 
 flink-get-web-ui:
-	node_port=$$(kubectl get --namespace default -o jsonpath="{.spec.ports[0].nodePort}" services flink-cluster-rest) && \
-	node_ip=$$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="ExternalIP")].address}') && \
+	node_port=$$(kubectl get --namespace default -o jsonpath="{.spec.ports[0].port}" services flink-cluster-rest) && \
+	node_ip=$$(kubectl get --namespace default -o jsonpath="{.status.loadBalancer.ingress[0].ip}" services flink-cluster-rest) && \
 	echo "http://$$node_ip:$$node_port"
