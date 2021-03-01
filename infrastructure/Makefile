@@ -36,6 +36,12 @@ mpds-uninstall:
 mpds-upgrade:
 	cd ${HELM_DIR} && helm upgrade mpds .
 
+pushgateway-install:
+	cd ${HELM_DIR}/charts/pushgateway && helm install pushgateway .
+
+pushgateway-uninstall:
+	helm uninstall pushgateway
+
 FLINK_DIR=	flink-1.12.1
 FLINK_TARBALL=	${FLINK_DIR}-bin-scala_2.12.tgz
 FLINK_DOCKER_IMAGE_COVID_ENGINE=	eu.gcr.io/${PROJECT_NAME}/covid-engine:2.3.1
