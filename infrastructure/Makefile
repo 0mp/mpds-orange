@@ -90,10 +90,12 @@ flink-run-job-iot:
 	./scripts/flink-run-job.sh \
 	$$(cat ../iot-simulator/args)
 
-flink-stop-job:
-	${FLINK_DIR}/bin/flink list \
+flink-stop-jobs:
+	-${FLINK_DIR}/bin/flink list \
 		--target kubernetes-session \
-		-Dkubernetes.cluster-id=flink-cluster
+		-Dkubernetes.cluster-id=flink-cluster | \
+	grep -Eo '[0-9a-z]{32}' | \
+	xargs -n 1 ${FLINK_DIR}/bin/flink cancel
 
 kafka-show-brokers:
 	node_ip=$$(gcloud compute instances list --format="value(EXTERNAL_IP)" | head -n 1) && \
