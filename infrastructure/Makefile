@@ -97,6 +97,8 @@ flink-stop-jobs:
 	grep -Eo '[0-9a-z]{32}' | \
 	xargs -n 1 ${FLINK_DIR}/bin/flink cancel
 
+FLINK_JOB_JAR=	covid-engine-2.3.2.jar
+
 flink-get-ids:
 	@printf '    job-id: '
 	@${FLINK_DIR}/bin/flink list --target kubernetes-session -Dkubernetes.cluster-id=flink-cluster | \
@@ -105,7 +107,7 @@ flink-get-ids:
 	@node_port=$$(kubectl get --namespace default -o jsonpath="{.spec.ports[0].port}" services flink-cluster-rest) && \
 	node_ip=$$(kubectl get --namespace default -o jsonpath="{.status.loadBalancer.ingress[0].ip}" services flink-cluster-rest) && \
 	curl -Ss --location --request GET "http://$$node_ip:$$node_port/jars" | \
-		jq -r '.files[] | select(.name=="covid-engine-2.3.1.jar") | .id'
+		jq -r '.files[] | select(.name=="${FLINK_JOB_JAR}") | .id'
 
 kafka-show-brokers:
 	node_ip=$$(gcloud compute instances list --format="value(EXTERNAL_IP)" | head -n 1) && \
