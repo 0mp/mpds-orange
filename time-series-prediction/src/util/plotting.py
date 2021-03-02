@@ -4,10 +4,88 @@
 import matplotlib
 from matplotlib import pyplot as plt
 import numpy as np
+import pandas as pd
+import os
+from math import ceil
+from threading import Thread, Lock
+import time
 
 def plot_signal(signal, f=0, t=20, tick_amount=200):
+    
+    plt.figure(figsize=(14,8))
     ticks = np.linspace(f, t, tick_amount)
     plt.plot(ticks, signal(ticks))
+    plt.xlabel("Time Steps", fontsize=15)
+    plt.ylabel("Traffic Load", fontsize=15)
+    os.makedirs("./plots", exist_ok=True)
+    plt.savefig(os.path.join("./plots", "test-signal") +".png")
+
+def plot_pred_loss_repo(dir_path, from_time = 0, cols = 2):
+    
+    rows = ceil(len(os.listdir(dir_path))/float(cols))
+    figure, axis = plt.subplots(rows, cols, figsize=(cols*12,rows*5))
+    
+    j = -1
+    
+    for i, file_name in enumerate(os.listdir(dir_path)):
+        file_path = os.path.join(dir_path, file_name)
+        df = pd.read_csv(file_path)
+        
+        pred_loss = df["pred_loss"][from_time:]
+        
+        #if i % 4 == 0:
+        #    j += 1
+        #print(j, i % 4)
+        axis[int(i/cols), i % cols].plot(np.arange(pred_loss.shape[0]), pred_loss)
+        axis[int(i/cols), i % cols].set_title(file_name)
+   
+    plt.show()
+    
+def plot_comparison(list_y_values, x_values, labels, title):
+    
+    plt.figure(figsize=(14,8))
+    
+    for y_values, label in zip(list_y_values, labels):
+        plt.plot(x_values, y_values, label=label)
+    
+    plt.legend(loc="upper right", prop={'size': 18})
+    plt.title(title, fontsize=22, fontweight="bold")
+    plt.xlabel("Time Steps", fontsize=15)
+    plt.ylabel("Prediction Loss", fontsize=15)
+    #plt.show()
+    os.makedirs("./plots", exist_ok=True)
+    plt.savefig(os.path.join("./plots", "-".join(title.split())) +".png")
+    
+    
+class LivePlotPrediction():
+    
+    def __init__(self, live_plot, seq_len, pred_len):
+        
+        self.seq_len = seq_len
+        self.pred_len = pred_len
+        #self.seq = list(range(seq_len))
+        #self.pred = list(range(seq_len, seq_len+pred_len))
+        self.line_seq = live_plot.add_line()
+        self.line_pred = live_plot.add_line()
+        
+    
+    """def run(self):
+        
+        with LiveGraph(backend='nbAgg') as h:
+            
+            self.line_seq = h.add_line()
+            self.line_pred = h.add_line()
+            
+            while(True):
+                with self.lock:
+                    self.line_seq.update(range(self.seq_len), self.seq)
+                    self.line_pred.update(range(self.seq_len, self.seq_len+self.pred_len), self.pred)
+                time.sleep(self.update_interval)"""
+        
+    def update(self, seq, pred):
+        self.line_seq.update(range(self.seq_len), seq)
+        self.line_pred.update(range(self.seq_len, self.seq_len+self.pred_len), pred)
+        
 
 class LiveLine:
     def __init__(self, graph, fmt=''):

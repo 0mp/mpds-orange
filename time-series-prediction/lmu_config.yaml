@@ -1,19 +1,32 @@
 kafka:
-    ip: 35.246.173.215:31090
-    in_topic: metric 
+    ip: 35.246.236.92:31090
+    # metric
+    in_topic: metric
+    # long-term-predictions
     out_topic: long-term-predictions
     input_interval: 10
     avg_agg_len: 1
-    expected_period: 100
+    expected_period: 12
+    # False
     self_simulate: False
+    # False
+    save_data: True
 model:
-    seq_len: 16
-    pred_len: 4
+    # 256
+    seq_len: 64
+    # 32
+    pred_len: 16
+    # 16
     hidden_dim: 16
+    # 64
     memory_dim: 64
-    order: 2
+    # 1
+    order: 1
 train:
-    time: 1
-    buffer: 3
+    # 5
+    time: 7
+    # 100
+    buffer: 5
+    # 0.001
     LR: 0.001
-    pretrain_iters: 100
+    pretrain_iters: 300

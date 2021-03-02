@@ -59,12 +59,11 @@ def eval_lambda(model, lambda_func, time_range = 24, tick_size = 0.1, eval_from 
         #plt.plot(ticks, x[0].cpu())
         plt.plot(future_ticks, y_hat[0].cpu())
         
-def pre_train_lambda(model, lambda_func, future = 1, seq_len = 24, tick_size = 0.1, max_t = 10000, epochs = 500, batch_size = 128, lr=0.001, dev = torch.device("cuda")):
+def pre_train_lambda(model, lambda_func, future = 1, seq_len = 24, max_t = 10000, epochs = 500, batch_size = 128, lr=0.001, dev = torch.device("cuda")):
     
     print("pre train")
     optimizer = optim.AdamW(model.parameters(), lr=lr)
     criterion = nn.MSELoss()
-    model = model.double()
     model.to(dev)
     
     model.train()
@@ -75,12 +74,12 @@ def pre_train_lambda(model, lambda_func, future = 1, seq_len = 24, tick_size = 0
 
         ticks = np.empty((batch_size, seq_len))
         for i in range(ticks.shape[0]):
-            ticks[i, :] = starts[i] + np.arange(seq_len) * tick_size
+            ticks[i, :] = starts[i] + np.arange(seq_len)
 
             future_ticks = np.empty((batch_size, future))
         
         for i in range(future_ticks.shape[0]):
-            future_ticks[i, :] = starts[i] + seq_len + np.arange(future) * tick_size
+            future_ticks[i, :] = starts[i] + seq_len + np.arange(future)
 
         x = torch.from_numpy(lambda_func(ticks)[:,None,:]).to(dev)
         y = torch.from_numpy(lambda_func(future_ticks)).to(dev)

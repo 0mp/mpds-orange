@@ -1,4 +1,3 @@
-from util.parser import get_GRU_parser
 from models.simple_models import CNN1D_1l_RNN
 from train_loops import pre_train_lambda
 from kafka_client.kafka_classes import KafkaConsumerThread, KafkaPredictionProducer
@@ -33,7 +32,7 @@ def find_max_train_iter(kafka, model):
 
     with kafka.lock:
         hist, i, _, _ = kafka.get_current()
-        opt = optim.AdamW(model.parameters())
+        opt = optim.AdamW(model.parameters(), lr=CFG.train.LR)
         crit = nn.MSELoss()
         total_dur = 0
         tensor_in, _, _ = normalize_input(hist[i-(train_iter+SEQ_LEN+PRED_LEN - 1):i])
@@ -62,7 +61,7 @@ def normalize_input(arr):
 
 def run(model, train_iter, kafka):
     
-    opt = optim.AdamW(model.parameters())
+    opt = optim.AdamW(model.parameters(), lr=CFG.train.LR)
     crit = nn.MSELoss()
     producer = KafkaPredictionProducer(CFG.kafka.out_topic,
                                        CFG.kafka.ip,
@@ -75,23 +74,18 @@ def run(model, train_iter, kafka):
             
             if i < train_iter + SEQ_LEN + PRED_LEN:
                 tensor_in, _max, _min = normalize_input(hist[0:i])
-                train(model,
-                      tensor_in,
-                      opt,
-                      crit,
-                      SEQ_LEN,
-                      PRED_LEN)
                 
             else:
                 tensor_in, _max, _min = normalize_input(
                     hist[i-(train_iter+SEQ_LEN+PRED_LEN):i]
                 )
-                train(model,
-                      tensor_in,
-                      opt,
-                      crit,
-                      SEQ_LEN,
-                      PRED_LEN)
+                
+            train(model,
+                  tensor_in,
+                  opt,
+                  crit,
+                  SEQ_LEN,
+                  PRED_LEN)
         
             model.eval()
             in_len = tensor_in.shape[0]

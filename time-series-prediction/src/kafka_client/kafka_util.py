@@ -7,6 +7,7 @@ import uuid
 from threading import Thread, Lock
 import torch
 import numpy as np
+import uuid
 
 
 def get_msg(topic, ip, interval = 100):
@@ -32,8 +33,9 @@ def sim_traffic(func, ip, topic="metric", interval = 200, amount = 1000):
     
     for x in range(1, 1000):
         
-        record = {"occurredOn" : datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).isoformat(),
-                  "kafkaMessagesPerSecond" : func(x)
+        record = {"occurredOn" : datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+                  "kafkaMessagesPerSecond" : func(x),
+                  "uuid" : str(uuid.uuid4())
                  }
         #print(f"send {x}")
         producer.send(topic, record)

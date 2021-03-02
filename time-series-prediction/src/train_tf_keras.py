@@ -31,7 +31,7 @@ def forward_walk_train(model, time_series, seq_len, future, optimizer, loss_fn):
 def pre_train_lambda(model, lambda_func, future = 1, seq_len = 24, tick_size = 0.1, max_t = 10000, epochs = 500, batch_size = 128, lr=0.001):
     
     print("pre train")
-    optimizer = keras.optimizers.Adam(learning_rate=3e-3)
+    optimizer = keras.optimizers.Adam(learning_rate=lr)
     loss_fn = keras.losses.MSE
     
     @tf.function
@@ -56,7 +56,7 @@ def pre_train_lambda(model, lambda_func, future = 1, seq_len = 24, tick_size = 0
         for i in range(future_ticks.shape[0]):
             future_ticks[i, :] = starts[i] + seq_len + np.arange(future)
 
-        x = tf.convert_to_tensor(lambda_func(ticks)[:,:,None]).to(dev)
-        y = tf.convert_to_tensor(lambda_func(future_ticks)).to(dev)
+        x = tf.convert_to_tensor(lambda_func(ticks)[:,:,None])
+        y = tf.convert_to_tensor(lambda_func(future_ticks))
             
         train_step(x, y)

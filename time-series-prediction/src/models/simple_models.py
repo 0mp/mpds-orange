@@ -35,7 +35,6 @@ class GRU(nn.Module):
     def forward(self, ts):
         gru_out, _ = self.gru(ts.permute(0,2,1))
         prediction = self.hidden2out(gru_out[:, -1,:].view(-1, self.hidden_dim))
-        
         return prediction
     
 
