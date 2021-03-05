@@ -31,6 +31,7 @@ public class MetricTriggerPredictionsSnapshot {
     private int targetParallelism;
 
     public String snapshotCacheKey(){
-        return this.getClass().getSimpleName();
+        return "MetricTriggerPredictionsSnapshot";
+//        return this.getClass().getSimpleName();
     }
 }

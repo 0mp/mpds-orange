@@ -62,7 +62,12 @@ public class MetricRetrieveScheduler {
         return Mono.zip(cpuMsg, kafkaLagMsg, kafkaLoadMsg, maxJobLatencyMsg, memMsg).map(tuple -> {
             float cpu=0.0f;
             if(tuple.getT1().getData().getResult().size()>0) {
-                cpu = Float.parseFloat(tuple.getT1().getData().getResult().get(0).getValue()[1].toString());
+                log.debug("CPU of Flink: " + tuple.getT1().getData().toString());
+                if(tuple.getT1().getData().getResult().get(0).getValue()[1].toString().equals("+Inf")) {
+                    cpu=1f;
+                } else {
+                    cpu = Float.parseFloat(tuple.getT1().getData().getResult().get(0).getValue()[1].toString());
+                }
                 log.info("current cpu: " + cpu);
             }
 
@@ -71,6 +76,7 @@ public class MetricRetrieveScheduler {
                 kafkaLag = Float.parseFloat(tuple.getT2().getData().getResult().get(0).getValue()[1].toString());
                 log.info("current lag: " + kafkaLag);
             }
+
             float kafkaLoad=0.0f;
             if(tuple.getT3().getData().getResult().size()>0) {
 //                kafkaLoad = Float.parseFloat(tuple.getT3().getData().getResult().get(0).getValue()[1].toString());

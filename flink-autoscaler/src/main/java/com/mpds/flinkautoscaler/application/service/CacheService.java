@@ -3,7 +3,7 @@ package com.mpds.flinkautoscaler.application.service;
 import com.mpds.flinkautoscaler.domain.model.MetricTriggerPredictionsSnapshot;
 import com.mpds.flinkautoscaler.domain.model.events.DomainEvent;
 
-public interface PredictionCacheService {
+public interface CacheService {
 
 //    PredictionReported getLatestPredictionFor(LocalDateTime localDateTime);
 
@@ -18,4 +18,8 @@ public interface PredictionCacheService {
     MetricTriggerPredictionsSnapshot getMetricTriggerPredictionsSnapshot(String snapshotCacheKey);
 
     MetricTriggerPredictionsSnapshot cacheSnapshot(MetricTriggerPredictionsSnapshot metricTriggerPredictionsSnapshot);
+
+    String getLastFlinkSavepoint();
+
+    String cacheFlinkSavepoint(String savepointPath);
 }

@@ -14,6 +14,6 @@ public interface ClusterPerformanceBenchmarkRepository extends ReactiveCrudRepos
     Mono<ClusterPerformanceBenchmark> findFirstByParallelism(int parallelism);
 
 //    SELECT TOP (1) FROM cluster_performance_benchmark WHERE max_rate < 21000 ORDER BY max_rate DESC
-    @Query("SELECT parallelism FROM cluster_performance_benchmark WHERE max_rate < :aggregatePrediction ORDER BY max_rate DESC LIMIT 1")
+    @Query("SELECT parallelism FROM cluster_performance_benchmark WHERE max_rate > :aggregatePrediction ORDER BY max_rate ASC LIMIT 1")
     Mono<Integer> findOptimalParallelism(float aggregatePrediction);
 }

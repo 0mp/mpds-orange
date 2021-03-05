@@ -1,6 +1,6 @@
 package com.mpds.flinkautoscaler.port.adapter.kafka.consumer;
 
-import com.mpds.flinkautoscaler.application.service.PredictionCacheService;
+import com.mpds.flinkautoscaler.application.service.CacheService;
 import com.mpds.flinkautoscaler.domain.model.events.LongtermPredictionReported;
 import com.mpds.flinkautoscaler.domain.model.events.ShorttermPredictionReported;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +18,7 @@ import java.util.function.Consumer;
 @RequiredArgsConstructor
 public class PredictionConsumers {
 
-    private final PredictionCacheService predictionCacheService;
+    private final CacheService cacheService;
 
     @Bean
     public Consumer<Flux<Message<ShorttermPredictionReported>>> shortTermPredictions() {
@@ -26,7 +26,7 @@ public class PredictionConsumers {
            ShorttermPredictionReported shorttermPredictionReported = shortternPredictionReportedMessage.getPayload();
             log.debug("STP - Caching: {}", shorttermPredictionReported.toString());
 
-           this.predictionCacheService.cacheDomainEvent(shorttermPredictionReported);
+           this.cacheService.cacheDomainEvent(shorttermPredictionReported);
 
            return Mono.empty();
        }).doOnError(Throwable::getMessage).subscribe();
@@ -39,7 +39,7 @@ public class PredictionConsumers {
             LongtermPredictionReported longtermPredictionReported = longtermPredictionReportedMessage.getPayload();
             log.debug("LTP - Caching: {}", longtermPredictionReported.toString());
 
-            this.predictionCacheService.cacheDomainEvent(longtermPredictionReported);
+            this.cacheService.cacheDomainEvent(longtermPredictionReported);
             return Mono.empty();
         }).doOnError(Throwable::getMessage).subscribe();
     }

@@ -1,7 +1,7 @@
 package com.mpds.flinkautoscaler.port.adapter.kafka.consumer;
 
 import com.mpds.flinkautoscaler.application.service.DomainEventService;
-import com.mpds.flinkautoscaler.application.service.PredictionCacheService;
+import com.mpds.flinkautoscaler.application.service.CacheService;
 import com.mpds.flinkautoscaler.domain.model.events.MetricReported;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +19,7 @@ import java.util.function.Consumer;
 public class MetricConsumer {
     private final DomainEventService domainEventService;
 
-    private final PredictionCacheService predictionCacheService;
+    private final CacheService cacheService;
 
     @Bean
     public Consumer<Flux<Message<MetricReported>>> metrics() {

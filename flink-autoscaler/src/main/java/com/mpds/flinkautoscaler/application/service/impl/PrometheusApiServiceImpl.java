@@ -76,7 +76,7 @@ public class PrometheusApiServiceImpl implements PrometheusApiService {
     public MultiValueMap<String, String> getFlinkNumRecordsOutPerSecond(String dateTime) {
         log.debug("getFlinkNumRecordsOutPerSecond for dateTime: " + dateTime);
         LinkedMultiValueMap<String, String> lmvn = new LinkedMultiValueMap<>();
-        final String PROMETHEUS_QUERY = "max(flink_taskmanager_job_task_numRecordsOutPerSecond)";
+        final String PROMETHEUS_QUERY = "flink_taskmanager_job_task_numRecordsOutPerSecond";
         lmvn.add("query", PROMETHEUS_QUERY);
         lmvn.add("time", dateTime);
         return lmvn;
@@ -84,10 +84,19 @@ public class PrometheusApiServiceImpl implements PrometheusApiService {
 
     @Override
     public MultiValueMap<String, String> getKafkaMessagesPerSecond(String dateTime) {
-
         log.debug("getKafkaMessagesPerSecond for dateTime: " + dateTime);
         LinkedMultiValueMap<String, String> lmvn = new LinkedMultiValueMap<>();
         final String PROMETHEUS_QUERY = "sum by (topic) (rate(kafka_server_brokertopicmetrics_messagesinpersec_count[2m]))";
+        lmvn.add("query", PROMETHEUS_QUERY);
+        lmvn.add("time", dateTime);
+        return lmvn;
+    }
+
+    @Override
+    public MultiValueMap<String, String> getFlinkNumOfTaskManagers(String dateTime) {
+        log.debug("getFlinkNumOfTaskManagers for dateTime: " + dateTime);
+        LinkedMultiValueMap<String, String> lmvn = new LinkedMultiValueMap<>();
+        final String PROMETHEUS_QUERY = "flink_jobmanager_numRegisteredTaskManagers";
         lmvn.add("query", PROMETHEUS_QUERY);
         lmvn.add("time", dateTime);
         return lmvn;
