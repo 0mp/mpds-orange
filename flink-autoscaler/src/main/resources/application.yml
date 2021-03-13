@@ -10,6 +10,7 @@ logging:
 #        r2dbc: DEBUG
 r2dbc:
   postgres:
+
     database: postgres
     hostname: localhost
     password: postgres

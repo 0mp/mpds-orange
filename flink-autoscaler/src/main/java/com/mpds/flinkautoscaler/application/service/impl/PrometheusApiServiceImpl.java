@@ -102,4 +102,13 @@ public class PrometheusApiServiceImpl implements PrometheusApiService {
         return lmvn;
     }
 
+    @Override
+    public MultiValueMap<String, String> getFlinkNumRecordsIn(String dateTime) {
+        log.debug("getFlinkNumRecordsIn for dateTime: " + dateTime);
+        LinkedMultiValueMap<String, String> lmvn = new LinkedMultiValueMap<>();
+        final String PROMETHEUS_QUERY = "sum by (job_name) (rate(flink_taskmanager_job_task_numRecordsIn[2m]))";
+        lmvn.add("query", PROMETHEUS_QUERY);
+        lmvn.add("time", dateTime);
+        return lmvn;
+    }
 }

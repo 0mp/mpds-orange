@@ -54,7 +54,9 @@ public class FlinkPerformanceRetrieveScheduler {
         MetricTriggerPredictionsSnapshot metricTriggerPredictionsSnapshot = this.cacheService.getMetricTriggerPredictionsSnapshot("MetricTriggerPredictionsSnapshot");
 
         Mono<Integer> currentFlinkClusterParallelism = this.flinkApiService.getCurrentFlinkClusterParallelism();
-        Mono<PrometheusMetric> prometheusMetric = this.prometheusApiService.getPrometheusMetric(this.prometheusApiService.getFlinkNumRecordsOutPerSecond(currentDateTimeString));
+
+//        Mono<PrometheusMetric> prometheusMetric = this.prometheusApiService.getPrometheusMetric(this.prometheusApiService.getFlinkNumRecordsOutPerSecond(currentDateTimeString));
+        Mono<PrometheusMetric> prometheusMetric = this.prometheusApiService.getPrometheusMetric(this.prometheusApiService.getFlinkNumRecordsIn(currentDateTimeString));
 
         Mono.zip(currentFlinkClusterParallelism, prometheusMetric)
                 .flatMap(tuple -> {
@@ -62,11 +64,11 @@ public class FlinkPerformanceRetrieveScheduler {
                     PrometheusMetric flinkMetric = tuple.getT2();
 
                     log.debug("__ RECIVED PROMETHEUS metric during benchmarking:  " + flinkMetric.toString());
-                    float flinkNumRecordsOutPerSecond= 0.0f;
+                    float flinkNumRecordsInPerSecond= 0.0f;
                     if(flinkMetric.getData().getResult() != null && flinkMetric.getData().getResult().size() > 0) {
-//                        flinkNumRecordsOutPerSecond = Float.parseFloat(flinkMetric.getData().getResult().get(0).getValue()[1].toString());
+                        flinkNumRecordsInPerSecond = Float.parseFloat(flinkMetric.getData().getResult().get(0).getValue()[1].toString());
                         // Calculating average throughput of the current Flink cluster
-                        flinkNumRecordsOutPerSecond = (float) flinkMetric.getData().getResult().stream().mapToDouble(value -> Double.parseDouble((String) value.getValue()[1])).average().orElse(0);
+//                        flinkNumRecordsInPerSecond = (float) flinkMetric.getData().getResult().stream().mapToDouble(value -> Double.parseDouble((String) value.getValue()[1])).average().orElse(0);
 //                        double ltChoiceTemp = longTermPrediction.getPredictedWorkloads().stream().mapToInt(predictedWorkload -> (int) predictedWorkload.getValue()).average().orElse(0);
                     }
 
@@ -74,7 +76,7 @@ public class FlinkPerformanceRetrieveScheduler {
                     log.info("Evaluation at: " + currentDateTimeString);
                     log.info("Current Flink parallelism of the cluster: " + currentParallelism);
                     log.info("Current Flink Metric from Prometheus: " + flinkMetric.toString());
-                    log.info("Current Flink numRecordsOutPerSecond: " + flinkNumRecordsOutPerSecond);
+                    log.info("Current Flink flinkNumRecordsInPerSecond: " + flinkNumRecordsInPerSecond);
                     if (metricTriggerPredictionsSnapshot != null) {
                         log.info("FlinkJob ID: " + metricTriggerPredictionsSnapshot.getJobId());
                         log.info("Snapshot from:" + metricTriggerPredictionsSnapshot.getSnapshotTime());
@@ -91,7 +93,8 @@ public class FlinkPerformanceRetrieveScheduler {
                             .parallelism(currentParallelism)
                             .createdDate(currentDateTime)
                             .numTaskmanagerPods(currentParallelism)
-                            .maxRate((int) (flinkNumRecordsOutPerSecond*currentParallelism*0.5))
+                            .maxRate((int) (flinkNumRecordsInPerSecond))
+//                            .maxRate((int) (flinkNumRecordsOutPerSecond*currentParallelism*0.5))
                             .build();
 
 //                    if(metricTriggerPredictionsSnapshot != null) {}

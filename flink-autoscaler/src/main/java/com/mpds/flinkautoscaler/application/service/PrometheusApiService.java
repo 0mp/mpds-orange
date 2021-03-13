@@ -21,4 +21,6 @@ public interface PrometheusApiService {
     MultiValueMap<String, String> getFlinkNumRecordsOutPerSecond(String dateTime);
 
     MultiValueMap<String, String> getFlinkNumOfTaskManagers(String dateTime);
+
+    MultiValueMap<String, String> getFlinkNumRecordsIn(String dateTime);
 }

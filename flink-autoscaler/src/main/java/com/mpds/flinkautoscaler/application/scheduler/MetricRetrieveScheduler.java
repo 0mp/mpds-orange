@@ -57,9 +57,10 @@ public class MetricRetrieveScheduler {
         Mono<PrometheusMetric> cpuMsg = prometheusApiService.getPrometheusMetric(prometheusApiService.getCpuUsage(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
         Mono<PrometheusMetric> maxJobLatencyMsg = prometheusApiService.getPrometheusMetric(prometheusApiService.getMaxJobLatency(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
         Mono<PrometheusMetric> memMsg = prometheusApiService.getPrometheusMetric(prometheusApiService.getMemUsage(currentDateTimeString)).subscribeOn(Schedulers.boundedElastic());
+        Mono<PrometheusMetric> flinkNumRecordsIn = this.prometheusApiService.getPrometheusMetric(this.prometheusApiService.getFlinkNumRecordsIn(currentDateTimeString));
 
 
-        return Mono.zip(cpuMsg, kafkaLagMsg, kafkaLoadMsg, maxJobLatencyMsg, memMsg).map(tuple -> {
+        return Mono.zip(cpuMsg, kafkaLagMsg, kafkaLoadMsg, maxJobLatencyMsg, memMsg, flinkNumRecordsIn).map(tuple -> {
             float cpu=0.0f;
             if(tuple.getT1().getData().getResult().size()>0) {
                 log.debug("CPU of Flink: " + tuple.getT1().getData().toString());
@@ -98,6 +99,12 @@ public class MetricRetrieveScheduler {
             if(tuple.getT5().getData().getResult().size()>0) {
                 mem = Float.parseFloat(tuple.getT5().getData().getResult().get(0).getValue()[1].toString());
             }
+
+            float flinkNumberRecordsIn=0.0f;
+            if(tuple.getT6().getData().getResult().size()>0) {
+                flinkNumberRecordsIn = Float.parseFloat(tuple.getT6().getData().getResult().get(0).getValue()[1].toString());
+            }
+
             MetricReported domainEvent = new MetricReported(
                     UUID.randomUUID(),
                     kafkaLoad,
@@ -105,7 +112,7 @@ public class MetricRetrieveScheduler {
                     this.prometheusProps.getSourceTopic(),
                     "",
                     maxJobLatency,
-                    0,
+                    flinkNumberRecordsIn,
                     0,
                     0,
                     true,

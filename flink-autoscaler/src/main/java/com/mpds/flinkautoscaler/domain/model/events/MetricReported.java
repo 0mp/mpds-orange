@@ -12,7 +12,7 @@ import java.util.UUID;
 
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
-@JsonPropertyOrder({"uuid", "eventType", "occurredOn", "kafkaTopic", "kafkaMessagesPerSecond", "kafkaMaxMessageLatency", "recordsProcessedPerSecond", "networkInPerSecond", "networkOutPerSecond", "sinkHealthy", "cpuUtilization", "memoryUsage"})
+@JsonPropertyOrder({"uuid", "eventType", "occurredOn", "kafkaTopic", "kafkaMessagesPerSecond", "kafkaMaxMessageLatency", "flinkNumberRecordsIn", "networkInPerSecond", "networkOutPerSecond", "sinkHealthy", "cpuUtilization", "memoryUsage"})
 @Getter
 public class MetricReported extends DomainEvent {
 
@@ -26,7 +26,7 @@ public class MetricReported extends DomainEvent {
 
     private final float kafkaLag;
 
-    private final float recordsProcessedPerSecond;
+    private final float flinkNumberRecordsIn;
 
     private final float networkInPerSecond;
 
@@ -45,7 +45,7 @@ public class MetricReported extends DomainEvent {
                           @JsonProperty("kafkaTopic") String kafkaTopic,
                           @JsonProperty("flinkTopic") String flinkTopic,
                           @JsonProperty("maxJobLatency") float maxJobLatency,
-                          @JsonProperty("recordsProcessedPerSecond") float recordsProcessedPerSecond,
+                          @JsonProperty("flinkNumberRecordsIn") float flinkNumberRecordsIn,
                           @JsonProperty("networkInPerSecond") float networkInPerSecond,
                           @JsonProperty("networkOutPerSecond") float networkOutPerSecond,
                           @JsonProperty("sinkHealthy") Boolean sinkHealthy,
@@ -57,7 +57,7 @@ public class MetricReported extends DomainEvent {
         this.flinkTopic = flinkTopic;
         this.kafkaMessagesPerSecond = kafkaMessagesPerSecond;
         this.maxJobLatency = maxJobLatency;
-        this.recordsProcessedPerSecond = recordsProcessedPerSecond;
+        this.flinkNumberRecordsIn = flinkNumberRecordsIn;
         this.networkInPerSecond = networkInPerSecond;
         this.networkOutPerSecond = networkOutPerSecond;
         this.sinkHealthy = sinkHealthy;
