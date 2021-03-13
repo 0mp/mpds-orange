@@ -15,13 +15,11 @@ services-install:
 	${MAKE} hdfs-install
 	${MAKE} mpds-install
 	${MAKE} flink-install
-	${MAKE} pushgateway-install
 
 services-uninstall:
 	-${MAKE} hdfs-uninstall
 	-${MAKE} mpds-uninstall
 	-${MAKE} flink-uninstall
-	-${MAKE} pushgateway-uninstall
 
 hdfs-install:
 	./scripts/hdfs-deploy.sh
@@ -39,15 +37,6 @@ mpds-uninstall:
 
 mpds-upgrade:
 	cd ${HELM_DIR} && helm upgrade mpds .
-
-pushgateway-install:
-	cd ${HELM_DIR}/charts/pushgateway && helm install pushgateway .
-
-pushgateway-uninstall:
-	helm uninstall pushgateway
-
-pushgateway-upgrade:
-	cd ${HELM_DIR}/charts/pushgateway && helm upgrade pushgateway .
 
 FLINK_DIR=	flink-1.12.1
 FLINK_TARBALL=	${FLINK_DIR}-bin-scala_2.12.tgz
