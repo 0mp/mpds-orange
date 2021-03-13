@@ -77,7 +77,7 @@ flink-get-web-ui:
 
 flink-run-job-iot:
 	export FLINK_DIR="${FLINK_DIR}" && \
-	export FLINK_JOB_JAR="../iot-simulator/iot_vehicles_experiment/producer/target/producer-1.0-SNAPSHOT.jar" && \
+	export FLINK_JOB_JAR="../iot-simulator/iot_vehicles_experiment/processor/target/processor-1.0-SNAPSHOT.jar" && \
 	./scripts/flink-run-job.sh \
 	$$(cat ../iot-simulator/args)
 
