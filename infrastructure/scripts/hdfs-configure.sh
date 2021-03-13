@@ -3,13 +3,7 @@
 set -eu
 set -x
 
-dirs="
-	/flink
-	/flink/checkpoints
-	/flink/savepoints
-
-	/flink/iot
-"
+dirs="/flink /flink/checkpoints /flink/savepoints /flink/iot"
 
 # Connect to the Hadoop pod and create necessary.
 kubectl exec hadoop-hdfs-namenode-0 -c namenode -i -- /bin/bash <<COMMANDS
