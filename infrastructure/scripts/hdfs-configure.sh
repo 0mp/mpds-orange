@@ -7,6 +7,8 @@ dirs="
 	/flink
 	/flink/checkpoints
 	/flink/savepoints
+
+	/flink/iot
 "
 
 # Connect to the Hadoop pod and create necessary.

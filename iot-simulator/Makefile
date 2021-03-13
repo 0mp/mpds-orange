@@ -1,8 +1,9 @@
 IOT_VEHICLES_EXPERIMENT_DIR=	./iot_vehicles_experiment
+HDFS_BACKUP_DIR=	hdfs://hadoop-hdfs-namenode:8020/flink/iot
 
 .PHONY: configure
 configure:
-	./scripts/configure-properties.sh
+	./scripts/configure-properties.sh $HDFS_BACKUP_DIR
 
 .PHONY: build
 build: configure
