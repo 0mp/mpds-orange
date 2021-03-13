@@ -1,9 +1,10 @@
 IOT_VEHICLES_EXPERIMENT_DIR=	./iot_vehicles_experiment
 HDFS_BACKUP_DIR=	hdfs://hadoop-hdfs-namenode:8020/flink/iot
+KAFKA_PARTITIONS=	8
 
 .PHONY: configure
 configure:
-	./scripts/configure-properties.sh $HDFS_BACKUP_DIR
+	./scripts/configure-properties.sh $HDFS_BACKUP_DIR $KAFKA_PARTITIONS
 
 .PHONY: build
 build: configure

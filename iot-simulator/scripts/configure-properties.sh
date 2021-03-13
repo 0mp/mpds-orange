@@ -8,7 +8,6 @@ set -eu
 # Globals
 #
 
-partitions=8
 brokers=$(./scripts/get-list-of-kafka-brokers.sh)
 
 #
@@ -16,13 +15,14 @@ brokers=$(./scripts/get-list-of-kafka-brokers.sh)
 #
 
 hdfs_dir="$1"
+kafka_partitions="$2"
 
 cat << EOF | tee "./iot_vehicles_experiment/processor/src/main/resources/processor.properties"
 # Kafka properties
 kafka.brokers=$brokers
 kafka.consumer.topic=iot-vehicles-events
 kafka.producer.topic=iot-vehicles-notifications
-kafka.partitions=$partitions
+kafka.partitions=$kafka_partitions
 
 # HDFS properties
 hdfs.backupFolder=$hdfs_dir
@@ -44,10 +44,10 @@ dataset.fileName=IoT_21D_1S.csv
 # Kafka properties
 kafka.brokerList=$brokers
 kafka.topic=iot-vehicles-events
-kafka.partitions=$partitions
+kafka.partitions=$kafka_partitions
 EOF
 
 cat << JOB_ARGS | tee args
-vehicles $brokers iot-vehicles-events iot-vehicles-notifications $partitions 30000
+vehicles $brokers iot-vehicles-events iot-vehicles-notifications $kafka_partitions 30000
 JOB_ARGS
 
