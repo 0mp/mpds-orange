@@ -40,7 +40,7 @@ public class MetricReported extends DomainEvent {
 
     @JsonCreator
     public MetricReported(@JsonProperty("uuid") UUID uuid,
-                          @JsonProperty("kafkaMessagesInPerSecond") float kafkaMessagesPerSecond,
+                          @JsonProperty("kafkaMessagesPerSecond") float kafkaMessagesPerSecond,
                           @JsonProperty("occurredOn") LocalDateTime occurredOn,
                           @JsonProperty("kafkaTopic") String kafkaTopic,
                           @JsonProperty("flinkTopic") String flinkTopic,

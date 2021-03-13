@@ -30,7 +30,7 @@ r2dbc:
 # Kafka config
 kafka:
 #  bootstrap-server: localhost:9092
-  bootstrap-server: 35.246.217.71:31090
+  bootstrap-server: 35.246.236.92:31090
   st-prediction-topic: st-prediction
   lt-prediction-topic: lt-prediction
   topic: metric
@@ -43,8 +43,8 @@ metrics-server:
 autoscaler:
   flink:
     base-url: http://35.198.125.206:8081
-    job-id: b2a76e767398382fd7e75c152df6eaaf
-    jar-id: b74c775a-f76e-4a66-87a5-ec12233b4e25_covid-engine-2.3.1.jar
+    job-id: 62b0a2743d423cf98af9c7cdf551c17c
+    jar-id: 6a06c816-8890-4f6d-8f93-a2d272394284_covid-engine-2.3.2.jar
     program-args: --statebackend.default false --checkpoint hdfs://hadoop-hdfs-namenode:8020/flink/checkpoints --checkpoint.interval 300000
     savepoint-directory: hdfs://hadoop-hdfs-namenode:8020/flink/savepoints
     cooldown-duration: 120
