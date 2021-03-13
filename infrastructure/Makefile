@@ -25,6 +25,8 @@ services-uninstall:
 
 hdfs-install:
 	./scripts/hdfs-deploy.sh
+	sleep 10
+	./scripts/hdfs-configure.sh
 
 hdfs-uninstall:
 	helm uninstall hadoop
