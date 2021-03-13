@@ -4,7 +4,7 @@ KAFKA_PARTITIONS=	8
 
 .PHONY: configure
 configure:
-	./scripts/configure-properties.sh $HDFS_BACKUP_DIR $KAFKA_PARTITIONS
+	./scripts/configure-properties.sh ${HDFS_BACKUP_DIR} ${KAFKA_PARTITIONS}
 
 .PHONY: build
 build: configure
