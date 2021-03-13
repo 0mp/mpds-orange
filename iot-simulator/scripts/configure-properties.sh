@@ -1,18 +1,17 @@
 #! /bin/sh -
 
-get_brokers() {
-	node_ip=$(gcloud compute instances list --format="value(EXTERNAL_IP)" | head -n 1)
-	kafkacat -b "$node_ip:31090" -L | grep '  broker' | awk '{print $4}' | tr '\n' ','
-}
+set -eu
 
 #
 # Globals
 #
 
 partitions=8
-brokers=$(get_brokers)
-# Remove a trailing comma.
-brokers=${brokers%,}
+brokers=$(./scripts/get-list-of-kafka-brokers.sh)
+
+#
+# Main
+#
 
 cat << EOF | tee "./iot_vehicles_experiment/processor/src/main/resources/processor.properties"
 # Kafka properties
