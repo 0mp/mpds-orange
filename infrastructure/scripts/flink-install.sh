@@ -39,4 +39,5 @@ echo quit | "$flink_dir/bin/kubernetes-session.sh" \
 	-Dmetrics.reporter.prom.port=9999 \
 	-Dmetrics.reporter.jmx.class=org.apache.flink.metrics.jmx.JMXReporter \
 	-Dmetrics.reporter.jmx.port=8789 \
-	-Dstate.savepoints.dir=hdfs://hadoop-hdfs-namenode:8020/flink/savepoints
+	-Dstate.savepoints.dir=hdfs://hadoop-hdfs-namenode:8020/flink/savepoints \
+	-Djobmanager.memory.jvm-metaspace.size="1024m"
