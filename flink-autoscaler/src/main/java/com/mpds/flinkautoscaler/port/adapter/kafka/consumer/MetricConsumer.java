@@ -30,7 +30,10 @@ public class MetricConsumer {
 //           assert acknowledgment != null;
 //           acknowledgment.acknowledge();
             return this.domainEventService.processDomainEvent(metricReported)
-                    .onErrorResume(throwable -> Mono.empty())
+                    .onErrorResume(throwable -> {
+                        log.error("Message could not be processed successfully because of the following error: ",throwable);
+                        return Mono.empty();
+                    })
                     .doOnError(Throwable::getMessage);
         }).doOnError(Throwable::getMessage).subscribe();
     }
