@@ -15,13 +15,11 @@ services-install:
 	${MAKE} hdfs-install
 	${MAKE} mpds-install
 	${MAKE} flink-install
-	${MAKE} pushgateway-install
 
 services-uninstall:
 	-${MAKE} hdfs-uninstall
 	-${MAKE} mpds-uninstall
 	-${MAKE} flink-uninstall
-	-${MAKE} pushgateway-uninstall
 
 hdfs-install:
 	./scripts/hdfs-deploy.sh
@@ -39,15 +37,6 @@ mpds-uninstall:
 
 mpds-upgrade:
 	cd ${HELM_DIR} && helm upgrade mpds .
-
-pushgateway-install:
-	cd ${HELM_DIR}/charts/pushgateway && helm install pushgateway .
-
-pushgateway-uninstall:
-	helm uninstall pushgateway
-
-pushgateway-upgrade:
-	cd ${HELM_DIR}/charts/pushgateway && helm upgrade pushgateway .
 
 FLINK_DIR=	flink-1.12.1
 FLINK_TARBALL=	${FLINK_DIR}-bin-scala_2.12.tgz
@@ -88,7 +77,7 @@ flink-get-web-ui:
 
 flink-run-job-iot:
 	export FLINK_DIR="${FLINK_DIR}" && \
-	export FLINK_JOB_JAR="../iot-simulator/iot_vehicles_experiment/producer/target/producer-1.0-SNAPSHOT.jar" && \
+	export FLINK_JOB_JAR="../iot-simulator/iot_vehicles_experiment/processor/target/processor-1.0-SNAPSHOT.jar" && \
 	./scripts/flink-run-job.sh \
 	$$(cat ../iot-simulator/args)
 

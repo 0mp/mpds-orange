@@ -1,21 +1,16 @@
 #! /bin/sh -
 #
-# Usage: $0 hdfs_dir
+# Usage: $0 brokers hdfs_dir kafka_partitions
 
 set -eu
-
-#
-# Globals
-#
-
-brokers=$(./scripts/get-list-of-kafka-brokers.sh)
 
 #
 # Main
 #
 
-hdfs_dir="$1"
-kafka_partitions="$2"
+brokers="$1"
+hdfs_dir="$2"
+kafka_partitions="$3"
 
 cat << EOF | tee "./iot_vehicles_experiment/processor/src/main/resources/processor.properties"
 # Kafka properties
