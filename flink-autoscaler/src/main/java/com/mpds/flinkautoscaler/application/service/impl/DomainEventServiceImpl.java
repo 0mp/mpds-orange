@@ -123,10 +123,10 @@ public class DomainEventServiceImpl implements DomainEventService {
         log.info("KAFAKA MESSAGES PER SECOND: " + kafkaMessagesPerSecond);
         LongtermPredictionReported longTermPrediction = (LongtermPredictionReported) this.cacheService.getPredictionFrom(PredictionConstants.LONG_TERM_PREDICTION_EVENT_NAME);
 
-        LocalDateTime TimeWantedPredictionFor = LocalDateTime.now().plusMinutes(2);
+        LocalDateTime timeWantedPredictionFor = LocalDateTime.now().plusMinutes(2);
         float ltPrediciton = kafkaMessagesPerSecond;
         if (longTermPrediction != null && noConsecutiveErrorViolation >= STEPS_NO_ERROR_VIOLATION) {
-            ltPrediciton = longTermPrediction.calcPredictedMessagesPerSecond(TimeWantedPredictionFor);
+            ltPrediciton = longTermPrediction.calcPredictedMessagesPerSecond(timeWantedPredictionFor);
         } else if (longTermPrediction == null) {
             log.info("No LT prediction found in cache!");
         } else {
@@ -304,7 +304,7 @@ public class DomainEventServiceImpl implements DomainEventService {
     }
 
     public Mono<Void> startFlinkCluster(int targetParallelism, MetricReported metricReported, ShorttermPredictionReported shortTermPrediction, LongtermPredictionReported longTermPrediction, String flinkSavepoint) {
-        log.info(" ############################## NOW STARTING THE JOB withour savepoint and with parallelism:  " + targetParallelism + " ##############################");
+        log.info(" ############################## NOW STARTING THE JOB withour savepoint and with parallelism: " + targetParallelism + " ##############################");
         return runFlinkJob(this.flinkProps.getJarId(), this.flinkProps.getJobId(), this.flinkProps.getProgramArgs(), targetParallelism, flinkSavepoint)
                 // Save last rescale action
                 .flatMap(flinkRunJobResponse -> {
@@ -471,6 +471,7 @@ public class DomainEventServiceImpl implements DomainEventService {
                 .body(Mono.just(flinkRunJobRequest), FlinkRunJobRequest.class)
                 .retrieve()
                 .bodyToMono(FlinkRunJobResponse.class)
+                .doOnError(throwable -> log.error("Flink job restart has failed: " + throwable.getMessage()))
                 .onErrorResume(throwable -> {
                     log.error("Flink job could not be started ", throwable);
                     log.info("Checking if Flink job could be restarted....");
