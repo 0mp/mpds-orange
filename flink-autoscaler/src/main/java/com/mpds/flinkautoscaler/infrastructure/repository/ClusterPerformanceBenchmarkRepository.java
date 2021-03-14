@@ -24,10 +24,6 @@ public interface ClusterPerformanceBenchmarkRepository extends ReactiveCrudRepos
     @Query("SELECT parallelism, max_rate FROM cluster_performance_benchmark WHERE max_rate < :aggregatePrediction ORDER BY max_rate ASC LIMIT 1")
     Mono<Tuple2<Integer, Integer>> findInfimumParallelismWithMaxRate(float aggregatePrediction);
 
-    Mono<Tuple2<Tuple2<Integer, Integer>, Tuple2<Integer, Integer>>> findOptimalAndInfimum(float aggregatePrediction){
-
-    }
-
     //@Query("SELECT max_rate FROM cluster_performance_benchmark WHERE parallelism = :aggregatePrediction")
     //Mono<Integer> getMaxRateOfParallelism(int parallelism);
 }
