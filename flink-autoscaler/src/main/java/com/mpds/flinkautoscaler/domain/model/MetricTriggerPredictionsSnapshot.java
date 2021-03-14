@@ -30,6 +30,8 @@ public class MetricTriggerPredictionsSnapshot {
 
     private int targetParallelism;
 
+    private float aggregatePrediction;
+
     public String snapshotCacheKey(){
         return "MetricTriggerPredictionsSnapshot";
 //        return this.getClass().getSimpleName();

@@ -219,7 +219,7 @@ public class DomainEventServiceImpl implements DomainEventService {
                                                 log.info("Rescale Cooldown: " + RESCALE_COOLDOWN.toString());
                                                 return Mono.empty();
                                             }
-                                            return rescaleFlinkCluster(targetParallelism, metricReported, shortTermPrediction, longTermPrediction);
+                                            return rescaleFlinkCluster(targetParallelism, metricReported, shortTermPrediction, longTermPrediction, aggregatePrediction);
                                         } else {
                                             log.info("No Flink rescaling triggered since current and target parallelism are the same!");
                                             return Mono.empty();
@@ -244,9 +244,9 @@ public class DomainEventServiceImpl implements DomainEventService {
                                 return Mono.empty();
                             }
                             if(this.cacheService.getLastFlinkSavepoint()!=null) {
-                                return startFlinkCluster(targetParallelism, metricReported, shortTermPrediction, longTermPrediction, cacheService.getLastFlinkSavepoint());
+                                return startFlinkCluster(targetParallelism, metricReported, shortTermPrediction, longTermPrediction, cacheService.getLastFlinkSavepoint(), aggregatePrediction);
                             }
-                            return startFlinkCluster(targetParallelism, metricReported, shortTermPrediction, longTermPrediction, null);
+                            return startFlinkCluster(targetParallelism, metricReported, shortTermPrediction, longTermPrediction, null, aggregatePrediction);
                         });
                     }
                     log.info("The Flink was NOT in the state: " + FlinkConstants.RUNNING_STATE);
@@ -254,7 +254,7 @@ public class DomainEventServiceImpl implements DomainEventService {
                 });
     }
 
-    public Mono<Void> rescaleFlinkCluster(int targetParallelism, MetricReported metricReported, ShorttermPredictionReported shortTermPrediction, LongtermPredictionReported longTermPrediction) {
+    public Mono<Void> rescaleFlinkCluster(int targetParallelism, MetricReported metricReported, ShorttermPredictionReported shortTermPrediction, LongtermPredictionReported longTermPrediction, float aggregatePrediction) {
         log.info(" ############################## NOW RESCALING THE JOB with parallelism:  " + targetParallelism + " ##############################");
         return this.createFlinkSavepoint(this.flinkProps.getJobId(), this.flinkProps.getSavepointDirectory(), true)
                 // Get savepoint path using the received request id
@@ -294,7 +294,7 @@ public class DomainEventServiceImpl implements DomainEventService {
                     log.info("The job has been started successfully: " + flinkRunJobResponse.toString());
                     setActualParallelism(targetParallelism);
                     LocalDateTime currentDateTime = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
-                    MetricTriggerPredictionsSnapshot metricTriggerPredictionsSnapshot = new MetricTriggerPredictionsSnapshot(flinkRunJobResponse.getJobId(), currentDateTime, metricReported, shortTermPrediction, longTermPrediction, targetParallelism);
+                    MetricTriggerPredictionsSnapshot metricTriggerPredictionsSnapshot = new MetricTriggerPredictionsSnapshot(flinkRunJobResponse.getJobId(), currentDateTime, metricReported, shortTermPrediction, longTermPrediction, targetParallelism, aggregatePrediction);
                     this.cacheService.cacheSnapshot(metricTriggerPredictionsSnapshot);
                     return Mono.empty();
                 })
@@ -304,7 +304,7 @@ public class DomainEventServiceImpl implements DomainEventService {
                 }).then();
     }
 
-    public Mono<Void> startFlinkCluster(int targetParallelism, MetricReported metricReported, ShorttermPredictionReported shortTermPrediction, LongtermPredictionReported longTermPrediction, String flinkSavepoint) {
+    public Mono<Void> startFlinkCluster(int targetParallelism, MetricReported metricReported, ShorttermPredictionReported shortTermPrediction, LongtermPredictionReported longTermPrediction, String flinkSavepoint, float aggregatePrediction) {
         log.info(" ############################## NOW STARTING THE JOB withour savepoint and with parallelism: " + targetParallelism + " ##############################");
         return runFlinkJob(this.flinkProps.getJarId(), this.flinkProps.getJobId(), this.flinkProps.getProgramArgs(), targetParallelism, flinkSavepoint)
                 // Save last rescale action
@@ -312,7 +312,7 @@ public class DomainEventServiceImpl implements DomainEventService {
                     log.info("The job has been started successfully: " + flinkRunJobResponse.toString());
                     setActualParallelism(targetParallelism);
                     LocalDateTime currentDateTime = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
-                    MetricTriggerPredictionsSnapshot metricTriggerPredictionsSnapshot = new MetricTriggerPredictionsSnapshot(flinkRunJobResponse.getJobId(), currentDateTime, metricReported, shortTermPrediction, longTermPrediction, targetParallelism);
+                    MetricTriggerPredictionsSnapshot metricTriggerPredictionsSnapshot = new MetricTriggerPredictionsSnapshot(flinkRunJobResponse.getJobId(), currentDateTime, metricReported, shortTermPrediction, longTermPrediction, targetParallelism, aggregatePrediction);
                     this.cacheService.cacheSnapshot(metricTriggerPredictionsSnapshot);
                     return Mono.empty();
                 })
