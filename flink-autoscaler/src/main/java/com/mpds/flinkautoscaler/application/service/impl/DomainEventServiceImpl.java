@@ -303,7 +303,7 @@ public class DomainEventServiceImpl implements DomainEventService {
     }
 
     public Mono<Void> startFlinkCluster(int targetParallelism, MetricReported metricReported, ShorttermPredictionReported shortTermPrediction, LongtermPredictionReported longTermPrediction, String flinkSavepoint) {
-        log.info(" ############################## NOW STARTING THE JOB withour savepoint and with parallelism:  " + targetParallelism + " ##############################");
+        log.info(" ############################## NOW STARTING THE JOB withour savepoint and with parallelism: " + targetParallelism + " ##############################");
         return runFlinkJob(this.flinkProps.getJarId(), this.flinkProps.getJobId(), this.flinkProps.getProgramArgs(), targetParallelism, flinkSavepoint)
                 // Save last rescale action
                 .flatMap(flinkRunJobResponse -> {
@@ -442,6 +442,7 @@ public class DomainEventServiceImpl implements DomainEventService {
                 .body(Mono.just(flinkRunJobRequest), FlinkRunJobRequest.class)
                 .retrieve()
                 .bodyToMono(FlinkRunJobResponse.class)
+                .doOnError(throwable -> log.error("Flink job restart has failed: " + throwable.getMessage()))
                 .onErrorResume(throwable -> {
                     log.error("Flink job could not be started ", throwable);
                     log.info("Checking if Flink job could be restarted....");
