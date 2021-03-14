@@ -351,13 +351,16 @@ public class DomainEventServiceImpl implements DomainEventService {
                     Mono<Tuple2<Integer, Integer>> infimumParallelismMaxRate = this.clusterPerformanceBenchmarkRepository.findInfimumParallelismWithMaxRate(targetFlinkRecordsIn).defaultIfEmpty(null);
                     return this.clusterPerformanceBenchmarkRepository.findOptimalParallelismWithMaxRate(targetFlinkRecordsIn)
                             .zipWith(infimumParallelismMaxRate)
-                            .map(above -> {
+                            .map(lookupResult -> {
                                 log.info("Current Flink Parallelism: " + currentParallel);
-                                log.info("above from DB: " + above);
-                                int aboveParallelism = above.getT1().getT1();
-                                double aboveRate = (double) above.getT1().getT2();
+                                log.info("above from DB: " + lookupResult.getT1().getT1());
+                                int aboveParallelism = lookupResult.getT1().getT1();
+                                double aboveRate = (double) lookupResult.getT1().getT2();
 
-                                Tuple2<Integer, Integer> infimum = above.getT2();
+                                Tuple2<Integer, Integer> infimum = lookupResult.getT2();
+                                if(infimum != null){
+                                    log.info("infimum from db: " + infimum.getT1());
+                                }
 
                                 if (scaleUp) {
                                     if(aboveParallelism > 1){
@@ -431,6 +434,7 @@ public class DomainEventServiceImpl implements DomainEventService {
         log.info("Linear Scaling - Target Parallelism: " + linearScaleParallel);
 
         if(linearScaleParallel > MAX_POSSIBLE_PARALLELISM) return MAX_POSSIBLE_PARALLELISM;
+        if(linearScaleParallel < 1) return 1;
 
         return linearScaleParallel;
 
