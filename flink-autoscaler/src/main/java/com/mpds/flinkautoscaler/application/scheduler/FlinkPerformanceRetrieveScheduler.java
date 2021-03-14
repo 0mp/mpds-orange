@@ -78,8 +78,8 @@ public class FlinkPerformanceRetrieveScheduler {
                     log.info("Current Flink Metric from Prometheus: " + flinkMetric.toString());
                     log.info("Current Flink flinkNumRecordsInPerSecond: " + flinkNumRecordsInPerSecond);
                     if (metricTriggerPredictionsSnapshot != null) {
-                        log.info("FlinkJob ID: " + metricTriggerPredictionsSnapshot.getJobId());
-                        log.info("Snapshot from:" + metricTriggerPredictionsSnapshot.getSnapshotTime());
+                        log.info("Flink Job ID: " + metricTriggerPredictionsSnapshot.getJobId());
+                        log.info("Snapshot from: " + metricTriggerPredictionsSnapshot.getSnapshotTime());
                         log.info("Based on Trigger: " + metricTriggerPredictionsSnapshot.getMetricTrigger().toString());
                         if(metricTriggerPredictionsSnapshot.getShorttermPrediction()!=null) log.info("Based on ST Prediction: " + metricTriggerPredictionsSnapshot.getShorttermPrediction().toString());
                         if(metricTriggerPredictionsSnapshot.getLongtermPredictionReported()!=null) log.info("Based on LT Prediction: " + metricTriggerPredictionsSnapshot.getLongtermPredictionReported().getClosestPrediction(currentDateTime));
