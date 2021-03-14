@@ -328,9 +328,6 @@ public class DomainEventServiceImpl implements DomainEventService {
         float kafkaLag = metricReported.getKafkaLag() + metricReported.getKafkaMessagesPerSecond() * EXPECTED_SECONDS_TO_RESCALE;
         float desiredTimeToProcessLag = (MAX_SECONDS_TO_PROCESS_LAG + MIN_SECONDS_TO_PROCESS_LAG) / 2;
         log.info("calculation of Target FlinkRecordsin: kafkaLag: " + kafkaLag + " - aggregatePrediction: " + aggregatePrediction + " - desiredTime: " + desiredTimeToProcessLag);
-        log.info("root: " + Math.sqrt(Math.pow(kafkaLag, 2) + 4 * desiredTimeToProcessLag * aggregatePrediction * kafkaLag));
-        log.info("add: " + (kafkaLag + Math.sqrt(Math.pow(kafkaLag, 2) + 4 * desiredTimeToProcessLag * aggregatePrediction * kafkaLag)));
-        log.info("whole: " + ((kafkaLag + Math.sqrt(Math.pow(kafkaLag, 2) + 4 * desiredTimeToProcessLag * aggregatePrediction * kafkaLag)) / 2 * desiredTimeToProcessLag));
         return (kafkaLag + Math.sqrt(Math.pow(kafkaLag, 2) + 4 * desiredTimeToProcessLag * aggregatePrediction * kafkaLag)) / (2 * desiredTimeToProcessLag);
     }
 
@@ -424,6 +421,7 @@ public class DomainEventServiceImpl implements DomainEventService {
                 return aboveParallelism - 1;
             }
         } else if (infimumParallelism > aboveParallelism){
+            log.info("Table inconsistency: Switching to higher parallelism with lower rate for exploration");
             return infimumParallelism;
         }
         return aboveParallelism;
