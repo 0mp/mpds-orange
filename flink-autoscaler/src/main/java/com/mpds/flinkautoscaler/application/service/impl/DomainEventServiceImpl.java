@@ -6,6 +6,7 @@ import com.mpds.flinkautoscaler.application.service.CacheService;
 import com.mpds.flinkautoscaler.application.service.DomainEventService;
 import com.mpds.flinkautoscaler.application.service.FlinkApiService;
 import com.mpds.flinkautoscaler.application.service.PrometheusApiService;
+import com.mpds.flinkautoscaler.domain.model.ClusterPerformanceBenchmark;
 import com.mpds.flinkautoscaler.domain.model.MetricTriggerPredictionsSnapshot;
 import com.mpds.flinkautoscaler.domain.model.events.LongtermPredictionReported;
 import com.mpds.flinkautoscaler.domain.model.events.MetricReported;
@@ -58,20 +59,21 @@ public class DomainEventServiceImpl implements DomainEventService {
     private final static float UPPERTHRESHOLD = 3;
     private final static float LOWERTHRESHOLD = 0.4f;
 
-    private final static float MAX_SECONDS_TO_PROCESS_LAG = 8;
+    private final static float MAX_SECONDS_TO_PROCESS_LAG = 12;
     private final static float MAX_CPU_UTILIZATION = 60;
     private final static float MAX_MEMORY_USAGE = 0.9f;
 
-    private final static float MIN_SECONDS_TO_PROCESS_LAG = 4;
+    private final static float MIN_SECONDS_TO_PROCESS_LAG = 6;
     private final static float MIN_CPU_UTILIZATION = 0.4f;
     private final static float MIN_MEMORY_USAGE = 0.5f;
 
+    private final static int LT_PREDICT_MINUTES = 3;
     private final static float LT_ERROR_FRACTION_THRESHOLD = 0.5f;
     private final static int STEPS_NO_ERROR_VIOLATION = 10;
 
     // TODO Add Rescale time to table
-    private final static float EXPECTED_SECONDS_TO_RESCALE = 3;
-    private final static int MAX_POSSIBLE_PARALLELISM =15;
+    private final static float EXPECTED_SECONDS_TO_RESCALE = 0;
+    private final static int MAX_POSSIBLE_PARALLELISM = 8;
 
     private int noConsecutiveErrorViolation = 0;
 
@@ -124,7 +126,7 @@ public class DomainEventServiceImpl implements DomainEventService {
         log.info("KAFAKA MESSAGES PER SECOND: " + kafkaMessagesPerSecond);
         LongtermPredictionReported longTermPrediction = (LongtermPredictionReported) this.cacheService.getPredictionFrom(PredictionConstants.LONG_TERM_PREDICTION_EVENT_NAME);
 
-        LocalDateTime timeWantedPredictionFor = LocalDateTime.now().plusMinutes(3);
+        LocalDateTime timeWantedPredictionFor = LocalDateTime.now().plusMinutes(LT_PREDICT_MINUTES);
         float ltPrediciton = kafkaMessagesPerSecond;
         if (longTermPrediction != null && noConsecutiveErrorViolation >= STEPS_NO_ERROR_VIOLATION) {
             ltPrediciton = longTermPrediction.calcPredictedMessagesPerSecond(timeWantedPredictionFor);
@@ -322,10 +324,14 @@ public class DomainEventServiceImpl implements DomainEventService {
                 }).then();
     }
 
-    public float getTargetFlinkRecordsIn(MetricReported metricReported, float aggregatePrediction){
+    public double getTargetFlinkRecordsIn(MetricReported metricReported, float aggregatePrediction){
         float kafkaLag = metricReported.getKafkaLag() + metricReported.getKafkaMessagesPerSecond() * EXPECTED_SECONDS_TO_RESCALE;
         float desiredTimeToProcessLag = (MAX_SECONDS_TO_PROCESS_LAG + MIN_SECONDS_TO_PROCESS_LAG) / 2;
-        return (float) ((kafkaLag + Math.sqrt(kafkaLag*kafkaLag + 4 * desiredTimeToProcessLag * aggregatePrediction * kafkaLag)) / 2 * desiredTimeToProcessLag);
+        log.info("calculation of Target FlinkRecordsin: kafkaLag: " + kafkaLag + " - aggregatePrediction: " + aggregatePrediction + " - desiredTime: " + desiredTimeToProcessLag);
+        log.info("root: " + Math.sqrt(Math.pow(kafkaLag, 2) + 4 * desiredTimeToProcessLag * aggregatePrediction * kafkaLag));
+        log.info("add: " + (kafkaLag + Math.sqrt(Math.pow(kafkaLag, 2) + 4 * desiredTimeToProcessLag * aggregatePrediction * kafkaLag)));
+        log.info("whole: " + ((kafkaLag + Math.sqrt(Math.pow(kafkaLag, 2) + 4 * desiredTimeToProcessLag * aggregatePrediction * kafkaLag)) / 2 * desiredTimeToProcessLag));
+        return (kafkaLag + Math.sqrt(Math.pow(kafkaLag, 2) + 4 * desiredTimeToProcessLag * aggregatePrediction * kafkaLag)) / (2 * desiredTimeToProcessLag);
     }
 
 
@@ -333,7 +339,7 @@ public class DomainEventServiceImpl implements DomainEventService {
         log.debug("aggregatePrediction: " + aggregatePrediction);
         LocalDateTime currentDateTime = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
         String currentDateTimeString = currentDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'"));
-        float targetFlinkRecordsIn = getTargetFlinkRecordsIn(metricReported, aggregatePrediction);
+        float targetFlinkRecordsIn = (float) getTargetFlinkRecordsIn(metricReported, aggregatePrediction);
         log.info("Target FlinkRecordsIn: " + targetFlinkRecordsIn);
 //        return this.flinkApiService.getCurrentFlinkClusterParallelism()
         return this.prometheusApiService.getPrometheusMetric(this.prometheusApiService.getFlinkNumOfTaskManagers(currentDateTimeString))
@@ -348,26 +354,26 @@ public class DomainEventServiceImpl implements DomainEventService {
                     setActualParallelism(currentParallel);
                     if(currentParallel==0) log.error("No task manager is running on the Flink cluster or the retrieved Prometheus metric is not correct!");
                     log.debug("currentParallel: " + currentParallel);
-
-                    Mono<Tuple2<Integer, Integer>> infimumParallelismMaxRate = this.clusterPerformanceBenchmarkRepository.findInfimumParallelismWithMaxRate(targetFlinkRecordsIn).defaultIfEmpty(null);
+                    Mono<ClusterPerformanceBenchmark> infimumParallelismMaxRate = this.clusterPerformanceBenchmarkRepository.findInfimumParallelismWithMaxRate(targetFlinkRecordsIn).defaultIfEmpty(new ClusterPerformanceBenchmark());//.switchIfEmpty(this.clusterPerformanceBenchmarkRepository.findOptimalParallelismWithMaxRate(targetFlinkRecordsIn));
                     return this.clusterPerformanceBenchmarkRepository.findOptimalParallelismWithMaxRate(targetFlinkRecordsIn)
                             .zipWith(infimumParallelismMaxRate)
                             .map(lookupResult -> {
                                 log.info("Current Flink Parallelism: " + currentParallel);
-                                log.info("above from DB: " + lookupResult.getT1().getT1());
-                                int aboveParallelism = lookupResult.getT1().getT1();
-                                double aboveRate = (double) lookupResult.getT1().getT2();
+                                log.info("above from DB: " + lookupResult.getT1().getParallelism());
+                                int aboveParallelism = lookupResult.getT1().getParallelism();
+                                double aboveRate = (double) lookupResult.getT1().getMaxRate();
+                                int infimumParallelism = lookupResult.getT2().getParallelism();
+                                double infimumRate = lookupResult.getT2().getMaxRate();
 
-                                Tuple2<Integer, Integer> infimum = lookupResult.getT2();
-                                if(infimum != null){
-                                    log.info("infimum from db: " + infimum.getT1());
+                                if(infimumParallelism > 0){
+                                    log.info("infimum from db: " + infimumParallelism);
                                 }
 
                                 if (scaleUp) {
-                                    if(aboveParallelism > 1){
+                                    if(aboveParallelism > currentParallel){
 
-                                        if(infimum != null){
-                                            return considerInfimumExploration(aboveParallelism, aboveRate, infimum.getT1(), (double) infimum.getT2(), targetFlinkRecordsIn);
+                                        if(infimumParallelism > 0){
+                                            return considerInfimumExploration(aboveParallelism, aboveRate, infimumParallelism, infimumRate, targetFlinkRecordsIn);
                                         }
                                     } else {
                                         return linearCalcFallBack(metricReported, aggregatePrediction, currentParallel, scaleUp);
@@ -375,8 +381,8 @@ public class DomainEventServiceImpl implements DomainEventService {
                                 }
                                 if (!scaleUp) {
 
-                                    if(infimum != null){
-                                        return considerInfimumExploration(aboveParallelism, aboveRate, infimum.getT1(), (double) infimum.getT2(), targetFlinkRecordsIn);
+                                    if(infimumParallelism > 0){
+                                        return considerInfimumExploration(aboveParallelism, aboveRate, infimumParallelism, infimumRate, targetFlinkRecordsIn);
                                     }
                                     return aboveParallelism;
                                 }
@@ -417,6 +423,8 @@ public class DomainEventServiceImpl implements DomainEventService {
                 log.info("infimum exploration occured: " + (aboveParallelism - 1));
                 return aboveParallelism - 1;
             }
+        } else if (infimumParallelism > aboveParallelism){
+            return infimumParallelism;
         }
         return aboveParallelism;
     }
