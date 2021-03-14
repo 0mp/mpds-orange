@@ -127,20 +127,21 @@ public class FlinkPerformanceRetrieveScheduler {
 //                    if(metricTriggerPredictionsSnapshot != null) {}
 //                        clusterPerformanceBenchmark.setMaxRate(((int) metricTriggerPredictionsSnapshot.getMetricTrigger().getKafkaMessagesPerSecond()));
 //                        clusterPerformanceBenchmark.setMaxRate((int) flinkNumRecordsOutPerSecond);
-
-                    return this.clusterPerformanceBenchmarkRepository.findFirstByParallelism(currentParallelism)
-                            .flatMap(clusterPerformanceBenchmark1 -> {
-                                clusterPerformanceBenchmark.setId(clusterPerformanceBenchmark1.getId());
-                                clusterPerformanceBenchmark.setCreatedAt(LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC));
-                                if(clusterPerformanceBenchmark.getMaxRate()<clusterPerformanceBenchmark1.getMaxRate()) {
-                                    clusterPerformanceBenchmark.setMaxRate(clusterPerformanceBenchmark1.getMaxRate());
-                                    log.debug("---- UPDATING PARALLELISM for  " + clusterPerformanceBenchmark.getParallelism() + " with maxRate: " + clusterPerformanceBenchmark.getMaxRate());
-                                }
-                                log.debug(clusterPerformanceBenchmark.toString());
-                                return this.clusterPerformanceBenchmarkRepository.save(clusterPerformanceBenchmark);
-                            })
-                            .switchIfEmpty(this.clusterPerformanceBenchmarkRepository.save(clusterPerformanceBenchmark));
-
+                    if(metricTriggerPredictionsSnapshot!=null && currentParallelism == metricTriggerPredictionsSnapshot.getTargetParallelism()) {
+                        return this.clusterPerformanceBenchmarkRepository.findFirstByParallelism(currentParallelism)
+                                .flatMap(clusterPerformanceBenchmark1 -> {
+                                    clusterPerformanceBenchmark.setId(clusterPerformanceBenchmark1.getId());
+                                    clusterPerformanceBenchmark.setCreatedAt(LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC));
+                                    if(clusterPerformanceBenchmark.getMaxRate()<clusterPerformanceBenchmark1.getMaxRate()) {
+                                        clusterPerformanceBenchmark.setMaxRate(clusterPerformanceBenchmark1.getMaxRate());
+                                        log.debug("---- UPDATING PARALLELISM for  " + clusterPerformanceBenchmark.getParallelism() + " with maxRate: " + clusterPerformanceBenchmark.getMaxRate());
+                                    }
+                                    log.debug(clusterPerformanceBenchmark.toString());
+                                    return this.clusterPerformanceBenchmarkRepository.save(clusterPerformanceBenchmark);
+                                })
+                                .switchIfEmpty(this.clusterPerformanceBenchmarkRepository.save(clusterPerformanceBenchmark));
+                    }
+                    return Mono.empty();
                 }).subscribe();
     }
 }
