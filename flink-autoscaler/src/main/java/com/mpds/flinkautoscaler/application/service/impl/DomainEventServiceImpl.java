@@ -66,6 +66,7 @@ public class DomainEventServiceImpl implements DomainEventService {
     private final static float MIN_CPU_UTILIZATION = 0.4f;
     private final static float MIN_MEMORY_USAGE = 0.5f;
 
+    private final static float LT_ERROR_FRACTION_THRESHOLD = 0.5f;
     private final static int STEPS_NO_ERROR_VIOLATION = 10;
 
     // TODO Add Rescale time to table
@@ -135,7 +136,7 @@ public class DomainEventServiceImpl implements DomainEventService {
 
         if (lastLongTermPrediction != null) {
             float oldPrediction = lastLongTermPrediction.calcPredictedMessagesPerSecond(metricReported.getOccurredOn());
-            if (oldPrediction < UPPERTHRESHOLD * kafkaMessagesPerSecond && oldPrediction > LOWERTHRESHOLD * kafkaMessagesPerSecond) {
+            if (Math.abs(oldPrediction - kafkaMessagesPerSecond) < LT_ERROR_FRACTION_THRESHOLD * kafkaMessagesPerSecond) {
                 noConsecutiveErrorViolation++;
             } else {
                 noConsecutiveErrorViolation = 0;
