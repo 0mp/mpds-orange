@@ -26,6 +26,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import reactor.util.function.Tuple2;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -65,6 +66,7 @@ public class DomainEventServiceImpl implements DomainEventService {
     private final static float MIN_CPU_UTILIZATION = 0.4f;
     private final static float MIN_MEMORY_USAGE = 0.5f;
 
+    private final static float LT_ERROR_FRACTION_THRESHOLD = 0.5f;
     private final static int STEPS_NO_ERROR_VIOLATION = 10;
 
     // TODO Add Rescale time to table
@@ -134,7 +136,7 @@ public class DomainEventServiceImpl implements DomainEventService {
 
         if (lastLongTermPrediction != null) {
             float oldPrediction = lastLongTermPrediction.calcPredictedMessagesPerSecond(metricReported.getOccurredOn());
-            if (oldPrediction < UPPERTHRESHOLD * kafkaMessagesPerSecond && oldPrediction > LOWERTHRESHOLD * kafkaMessagesPerSecond) {
+            if (Math.abs(oldPrediction - kafkaMessagesPerSecond) < LT_ERROR_FRACTION_THRESHOLD * kafkaMessagesPerSecond) {
                 noConsecutiveErrorViolation++;
             } else {
                 noConsecutiveErrorViolation = 0;
@@ -326,6 +328,7 @@ public class DomainEventServiceImpl implements DomainEventService {
         return (float) ((kafkaLag + Math.sqrt(kafkaLag*kafkaLag + 4 * desiredTimeToProcessLag * aggregatePrediction * kafkaLag)) / 2 * desiredTimeToProcessLag);
     }
 
+
     public Mono<Integer> getTargetParallelism(MetricReported metricReported, float aggregatePrediction, boolean scaleUp) {
         log.debug("aggregatePrediction: " + aggregatePrediction);
         LocalDateTime currentDateTime = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
@@ -345,20 +348,39 @@ public class DomainEventServiceImpl implements DomainEventService {
                     setActualParallelism(currentParallel);
                     if(currentParallel==0) log.error("No task manager is running on the Flink cluster or the retrieved Prometheus metric is not correct!");
                     log.debug("currentParallel: " + currentParallel);
-                    return this.clusterPerformanceBenchmarkRepository.findOptimalParallelism(targetFlinkRecordsIn)
-                            .map(above -> {
-                                log.info("Current Flink Parallelism: " + currentParallel);
-                                log.info("above from DB: " + above);
-                                int newParallel = currentParallel;
 
-                                if (above > currentParallel && scaleUp) {
-                                    newParallel = above;
+                    Mono<Tuple2<Integer, Integer>> infimumParallelismMaxRate = this.clusterPerformanceBenchmarkRepository.findInfimumParallelismWithMaxRate(targetFlinkRecordsIn).defaultIfEmpty(null);
+                    return this.clusterPerformanceBenchmarkRepository.findOptimalParallelismWithMaxRate(targetFlinkRecordsIn)
+                            .zipWith(infimumParallelismMaxRate)
+                            .map(lookupResult -> {
+                                log.info("Current Flink Parallelism: " + currentParallel);
+                                log.info("above from DB: " + lookupResult.getT1().getT1());
+                                int aboveParallelism = lookupResult.getT1().getT1();
+                                double aboveRate = (double) lookupResult.getT1().getT2();
+
+                                Tuple2<Integer, Integer> infimum = lookupResult.getT2();
+                                if(infimum != null){
+                                    log.info("infimum from db: " + infimum.getT1());
                                 }
-                                if (above < currentParallel && !scaleUp) {
-                                    //TODO: fill table on scale down too
-                                    newParallel = above;
+
+                                if (scaleUp) {
+                                    if(aboveParallelism > 1){
+
+                                        if(infimum != null){
+                                            return considerInfimumExploration(aboveParallelism, aboveRate, infimum.getT1(), (double) infimum.getT2(), targetFlinkRecordsIn);
+                                        }
+                                    } else {
+                                        return linearCalcFallBack(metricReported, aggregatePrediction, currentParallel, scaleUp);
+                                    }
                                 }
-                                return newParallel;
+                                if (!scaleUp) {
+
+                                    if(infimum != null){
+                                        return considerInfimumExploration(aboveParallelism, aboveRate, infimum.getT1(), (double) infimum.getT2(), targetFlinkRecordsIn);
+                                    }
+                                    return aboveParallelism;
+                                }
+                                return aboveParallelism;
                             })
                             .switchIfEmpty(Mono.just(linearCalcFallBack(metricReported, aggregatePrediction, currentParallel, scaleUp)));
                     // Default to parallelism 1 as the minimum
@@ -387,6 +409,17 @@ public class DomainEventServiceImpl implements DomainEventService {
 //        return newParallel;
     }
 
+    public int considerInfimumExploration(int aboveParallelism, double aboveRate, int infimumParallelism, double infimumRate, double targetFlinkRecordsIn){
+        int dist = aboveParallelism - infimumParallelism;
+        if(dist > 1){
+            double estimatedRate =  infimumRate + (aboveRate - infimumRate)/dist * (dist-1.1);
+            if(Math.abs(estimatedRate - targetFlinkRecordsIn) < Math.abs(aboveRate - targetFlinkRecordsIn)){
+                return aboveParallelism - 1;
+            }
+        }
+        return aboveParallelism;
+    }
+
     public int calculateNewParallelism(int currentParallel, MetricReported metricReported, float aggregatePrediction) {
         log.info("currentParallel: " + currentParallel + " --- Kafka Messages per second: " + metricReported.getKafkaMessagesPerSecond() + " -- aggregatePrediction: " + aggregatePrediction);
         log.info("--Calculated new parallelism: " + (int) (currentParallel / metricReported.getKafkaMessagesPerSecond() * aggregatePrediction));
@@ -402,6 +435,7 @@ public class DomainEventServiceImpl implements DomainEventService {
         log.info("Linear Scaling - Target Parallelism: " + linearScaleParallel);
 
         if(linearScaleParallel > MAX_POSSIBLE_PARALLELISM) return MAX_POSSIBLE_PARALLELISM;
+        if(linearScaleParallel < 1) return 1;
 
         return linearScaleParallel;
 
