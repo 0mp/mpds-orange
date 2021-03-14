@@ -122,10 +122,10 @@ public class DomainEventServiceImpl implements DomainEventService {
         log.info("KAFAKA MESSAGES PER SECOND: " + kafkaMessagesPerSecond);
         LongtermPredictionReported longTermPrediction = (LongtermPredictionReported) this.cacheService.getPredictionFrom(PredictionConstants.LONG_TERM_PREDICTION_EVENT_NAME);
 
-        LocalDateTime TimeWantedPredictionFor = LocalDateTime.now().plusMinutes(2);
+        LocalDateTime timeWantedPredictionFor = LocalDateTime.now().plusMinutes(2);
         float ltPrediciton = kafkaMessagesPerSecond;
         if (longTermPrediction != null && noConsecutiveErrorViolation >= STEPS_NO_ERROR_VIOLATION) {
-            ltPrediciton = longTermPrediction.calcPredictedMessagesPerSecond(TimeWantedPredictionFor);
+            ltPrediciton = longTermPrediction.calcPredictedMessagesPerSecond(timeWantedPredictionFor);
         } else if (longTermPrediction == null) {
             log.info("No LT prediction found in cache!");
         } else {

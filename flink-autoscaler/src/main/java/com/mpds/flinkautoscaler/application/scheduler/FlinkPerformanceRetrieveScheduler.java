@@ -53,7 +53,17 @@ public class FlinkPerformanceRetrieveScheduler {
 
         MetricTriggerPredictionsSnapshot metricTriggerPredictionsSnapshot = this.cacheService.getMetricTriggerPredictionsSnapshot("MetricTriggerPredictionsSnapshot");
 
-        Mono<Integer> currentFlinkClusterParallelism = this.flinkApiService.getCurrentFlinkClusterParallelism();
+//        Mono<Integer> currentFlinkClusterParallelism = this.flinkApiService.getCurrentFlinkClusterParallelism();
+        Mono<Integer> currentFlinkClusterParallelism = this.prometheusApiService.getPrometheusMetric(this.prometheusApiService.getFlinkNumOfTaskManagers(currentDateTimeString))
+                .map(prometheusMetric -> {
+                    log.debug("[FlinkPerformanceRetrieveScheduler] Prometheus number of task managers response at <"+ currentDateTimeString +"> : " + prometheusMetric.toString());
+                    if(prometheusMetric.getData().getResult() != null && prometheusMetric.getData().getResult().size() > 0) {
+                        return Integer.parseInt(prometheusMetric.getData().getResult().get(0).getValue()[1].toString());
+                    }
+                    log.error("No Flink task managers were active reported from Prometheus at: " + currentDateTimeString);
+                    return 0;
+                });
+//        return this.prometheusApiService.getPrometheusMetric(this.prometheusApiService.getFlinkNumOfTaskManagers(currentDateTimeString))
 
 //        Mono<PrometheusMetric> prometheusMetric = this.prometheusApiService.getPrometheusMetric(this.prometheusApiService.getFlinkNumRecordsOutPerSecond(currentDateTimeString));
         Mono<PrometheusMetric> prometheusMetric = this.prometheusApiService.getPrometheusMetric(this.prometheusApiService.getFlinkNumRecordsIn(currentDateTimeString));
