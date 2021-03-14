@@ -124,7 +124,7 @@ public class DomainEventServiceImpl implements DomainEventService {
         log.info("KAFAKA MESSAGES PER SECOND: " + kafkaMessagesPerSecond);
         LongtermPredictionReported longTermPrediction = (LongtermPredictionReported) this.cacheService.getPredictionFrom(PredictionConstants.LONG_TERM_PREDICTION_EVENT_NAME);
 
-        LocalDateTime timeWantedPredictionFor = LocalDateTime.now().plusMinutes(2);
+        LocalDateTime timeWantedPredictionFor = LocalDateTime.now().plusMinutes(3);
         float ltPrediciton = kafkaMessagesPerSecond;
         if (longTermPrediction != null && noConsecutiveErrorViolation >= STEPS_NO_ERROR_VIOLATION) {
             ltPrediciton = longTermPrediction.calcPredictedMessagesPerSecond(timeWantedPredictionFor);
@@ -414,6 +414,7 @@ public class DomainEventServiceImpl implements DomainEventService {
         if(dist > 1){
             double estimatedRate =  infimumRate + (aboveRate - infimumRate)/dist * (dist-1.1);
             if(Math.abs(estimatedRate - targetFlinkRecordsIn) < Math.abs(aboveRate - targetFlinkRecordsIn)){
+                log.info("infimum exploration occured: " + (aboveParallelism - 1));
                 return aboveParallelism - 1;
             }
         }
