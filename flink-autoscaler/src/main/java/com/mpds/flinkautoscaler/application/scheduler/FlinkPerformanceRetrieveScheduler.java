@@ -107,6 +107,7 @@ public class FlinkPerformanceRetrieveScheduler {
                         log.info("Flink Job ID: " + metricTriggerPredictionsSnapshot.getJobId());
                         log.info("Snapshot from: " + metricTriggerPredictionsSnapshot.getSnapshotTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")));
                         log.info("Based on Trigger: " + metricTriggerPredictionsSnapshot.getMetricTrigger().toString());
+                        log.info("Aggregate Prediction: " + metricTriggerPredictionsSnapshot.getAggregatePrediction());
                         if(metricTriggerPredictionsSnapshot.getShorttermPrediction()!=null) log.info("Based on ST Prediction: " + metricTriggerPredictionsSnapshot.getShorttermPrediction().toString());
                         if(metricTriggerPredictionsSnapshot.getLongtermPredictionReported()!=null) log.info("Based on LT Prediction: " + metricTriggerPredictionsSnapshot.getLongtermPredictionReported().getClosestPrediction(currentDateTime));
                         if (currentParallelism != metricTriggerPredictionsSnapshot.getTargetParallelism())
