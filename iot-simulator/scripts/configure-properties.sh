@@ -46,3 +46,8 @@ cat << JOB_ARGS | tee args
 vehicles $brokers iot-vehicles-events iot-vehicles-notifications $kafka_partitions 30000
 JOB_ARGS
 
+# Patch TRANSACTION_TIMEOUT_CONFIG to a value suitable for our Kafka deployment.
+tmpfile=$(mktemp)
+run_java_file="iot_vehicles_experiment/processor/src/main/java/de/tu_berlin/dos/arm/iot_vehicles_experiment/processor/Run.java"
+sed '/TRANSACTION_TIMEOUT_CONFIG/s/3600000/36000/' "$run_java_file" > "$tmpfile"
+mv "$tmpfile" "$run_java_file"
