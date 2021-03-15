@@ -38,7 +38,7 @@ kafka:
   acks-config: all
 metrics-server:
   prometheus:
-    base-url: http://35.246.217.71:30090
+    base-url: http://35.246.236.92:30090
     source-topic: covid
 autoscaler:
   flink:
@@ -59,7 +59,7 @@ spring:
           longTermPredictions-in-0: long-term-predictions
       kafka:
         binder:
-          brokers: 35.246.217.71:31090
+          brokers: 35.246.236.92:31090
 #          brokers: localhost:9092
       bindings:
         prometheus-metrics:
