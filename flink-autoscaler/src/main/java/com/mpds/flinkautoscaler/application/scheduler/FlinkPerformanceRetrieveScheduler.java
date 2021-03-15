@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -123,11 +124,10 @@ public class FlinkPerformanceRetrieveScheduler {
                             .maxRate((int) (flinkNumRecordsInPerSecond))
 //                            .maxRate((int) (flinkNumRecordsOutPerSecond*currentParallelism*0.5))
                             .build();
-
 //                    if(metricTriggerPredictionsSnapshot != null) {}
 //                        clusterPerformanceBenchmark.setMaxRate(((int) metricTriggerPredictionsSnapshot.getMetricTrigger().getKafkaMessagesPerSecond()));
 //                        clusterPerformanceBenchmark.setMaxRate((int) flinkNumRecordsOutPerSecond);
-                    if(metricTriggerPredictionsSnapshot!=null && currentParallelism == metricTriggerPredictionsSnapshot.getTargetParallelism()) {
+                    if(metricTriggerPredictionsSnapshot!=null && currentParallelism == metricTriggerPredictionsSnapshot.getTargetParallelism() && Duration.between(metricTriggerPredictionsSnapshot.getSnapshotTime(), LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC)).abs().toSeconds()>30) {
                         return this.clusterPerformanceBenchmarkRepository.findFirstByParallelism(currentParallelism)
                                 .flatMap(clusterPerformanceBenchmark1 -> {
                                     clusterPerformanceBenchmark.setId(clusterPerformanceBenchmark1.getId());
