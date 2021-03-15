@@ -101,5 +101,5 @@ flink-get-ids:
 		jq -r '.files[] | select(.name=="${FLINK_JOB_JAR}") | .id'
 
 kafka-show-brokers:
-	node_ip=$$(gcloud compute instances list --format="value(EXTERNAL_IP)" | head -n 1) && \
+	node_ip=$$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(.type=="ExternalIP")].address}') && \
 	kafkacat -b $$node_ip:31090 -L | grep '  broker'
