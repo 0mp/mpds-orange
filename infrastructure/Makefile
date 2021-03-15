@@ -103,3 +103,8 @@ flink-get-ids:
 kafka-show-brokers:
 	node_ip=$$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(.type=="ExternalIP")].address}') && \
 	kafkacat -b $$node_ip:31090 -L | grep '  broker'
+
+grafana-get-web-ui:
+	node_port=30080 && \
+	node_ip=$$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(.type=="ExternalIP")].address}') && \
+	echo "http://$$node_ip:$$node_port"
