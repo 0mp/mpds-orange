@@ -61,11 +61,11 @@ public class DomainEventServiceImpl implements DomainEventService {
     private final static float UPPERTHRESHOLD = 3;
     private final static float LOWERTHRESHOLD = 0.4f;
 
-    private final static float MAX_SECONDS_TO_PROCESS_LAG = 20;
+    private final static float MAX_SECONDS_TO_PROCESS_LAG = 18;
     private final static float MAX_CPU_UTILIZATION = 60;
     private final static float MAX_MEMORY_USAGE = 0.9f;
 
-    private final static float MIN_SECONDS_TO_PROCESS_LAG = 10;
+    private final static float MIN_SECONDS_TO_PROCESS_LAG = 8;
     private final static float MIN_CPU_UTILIZATION = 0.4f;
     private final static float MIN_MEMORY_USAGE = 0.5f;
 
@@ -73,9 +73,12 @@ public class DomainEventServiceImpl implements DomainEventService {
     private final static float LT_ERROR_FRACTION_THRESHOLD = 0.5f;
     private final static int STEPS_NO_ERROR_VIOLATION = 5;
 
+    private final static float TARGET_RECORDS_OVERESTIMATION_FACTOR = 1.4f;
+    private final static float FLINK_RECORDS_IN_DISCOUNT_FACTOR = 0.6f;
+
     // TODO Add Rescale time to table
     private final static float EXPECTED_SECONDS_TO_RESCALE = 4;
-    private final static float LOWER_LAG_TIME_THRESHOLD = 5;
+    private final static float LOWER_LAG_TIME_THRESHOLD = 4;
     private final static int MAX_POSSIBLE_PARALLELISM = 8;
 
     private int noConsecutiveErrorViolation = 0;
@@ -120,6 +123,9 @@ public class DomainEventServiceImpl implements DomainEventService {
     }
 
     public float getTimeToProcessLag(float kafkaLag, float kafkaMessagesPerSecond, float flinkRecordsInPerSecond){
+
+        // Records in are overestimated
+        flinkRecordsInPerSecond = flinkRecordsInPerSecond * FLINK_RECORDS_IN_DISCOUNT_FACTOR;
 
         if (Double.isNaN(kafkaLag)) {
             log.info("lag is NaN");
@@ -362,7 +368,7 @@ public class DomainEventServiceImpl implements DomainEventService {
         float kafkaLag = metricReported.getKafkaLag() + metricReported.getKafkaMessagesPerSecond() * EXPECTED_SECONDS_TO_RESCALE;
         float desiredTimeToProcessLag = (MAX_SECONDS_TO_PROCESS_LAG + MIN_SECONDS_TO_PROCESS_LAG) / 2;
         log.info("calculation of Target FlinkRecordsin: kafkaLag: " + kafkaLag + " - aggregatePrediction: " + aggregatePrediction + " - desiredTime: " + desiredTimeToProcessLag);
-        return (kafkaLag + Math.sqrt(Math.pow(kafkaLag, 2) + 4 * desiredTimeToProcessLag * aggregatePrediction * kafkaLag)) / (2 * desiredTimeToProcessLag);
+        return TARGET_RECORDS_OVERESTIMATION_FACTOR * ((kafkaLag + Math.sqrt(Math.pow(kafkaLag, 2) + 4 * desiredTimeToProcessLag * aggregatePrediction * kafkaLag)) / (2 * desiredTimeToProcessLag));
     }
 
 
