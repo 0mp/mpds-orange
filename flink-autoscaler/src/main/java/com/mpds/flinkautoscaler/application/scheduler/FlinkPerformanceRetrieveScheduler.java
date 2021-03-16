@@ -9,6 +9,8 @@ import com.mpds.flinkautoscaler.domain.model.PrometheusMetric;
 import com.mpds.flinkautoscaler.domain.model.Result;
 import com.mpds.flinkautoscaler.infrastructure.config.PrometheusProps;
 import com.mpds.flinkautoscaler.infrastructure.repository.ClusterPerformanceBenchmarkRepository;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -36,6 +38,11 @@ public class FlinkPerformanceRetrieveScheduler {
     private final PrometheusApiService prometheusApiService;
 
     private final FlinkApiService flinkApiService;
+
+    // Flag is changed when the first rescale has been carried out
+    @Getter
+    @Setter
+    private Boolean alwaysInsertClusterPerformanceToDB = true;
 
     public FlinkPerformanceRetrieveScheduler(CacheService cacheService, ClusterPerformanceBenchmarkRepository clusterPerformanceBenchmarkRepository, WebClient prometheusWebClient, PrometheusProps prometheusProps, PrometheusApiService prometheusApiService, FlinkApiService flinkApiService) {
         this.cacheService = cacheService;
@@ -127,7 +134,7 @@ public class FlinkPerformanceRetrieveScheduler {
 //                    if(metricTriggerPredictionsSnapshot != null) {}
 //                        clusterPerformanceBenchmark.setMaxRate(((int) metricTriggerPredictionsSnapshot.getMetricTrigger().getKafkaMessagesPerSecond()));
 //                        clusterPerformanceBenchmark.setMaxRate((int) flinkNumRecordsOutPerSecond);
-                    if(metricTriggerPredictionsSnapshot!=null && currentParallelism == metricTriggerPredictionsSnapshot.getTargetParallelism() && Duration.between(metricTriggerPredictionsSnapshot.getSnapshotTime(), LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC)).abs().toSeconds()>30) {
+                    if( (alwaysInsertClusterPerformanceToDB) || (metricTriggerPredictionsSnapshot!=null && currentParallelism == metricTriggerPredictionsSnapshot.getTargetParallelism() && Duration.between(metricTriggerPredictionsSnapshot.getSnapshotTime(), LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC)).abs().toSeconds()>30)) {
                         return this.clusterPerformanceBenchmarkRepository.findFirstByParallelism(currentParallelism)
                                 .flatMap(clusterPerformanceBenchmark1 -> {
                                     clusterPerformanceBenchmark.setId(clusterPerformanceBenchmark1.getId());
