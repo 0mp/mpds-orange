@@ -42,9 +42,9 @@ metrics-server:
     source-topic: covid
 autoscaler:
   flink:
-    base-url: http://35.246.148.223:8081
-    job-id: 436edb1c692e1a54ef9bfbc78ec27b17
-    jar-id: a18562fa-e7c2-4caa-8146-ef70754cbe0b_covid-engine-2.3.2.jar
+    base-url: http://34.107.29.56:8081
+    job-id: a6f1ffe09c7da4725b0344a210c6ad24
+    jar-id: 7dbe8b21-0c15-4b6a-9a66-4e5d86d5c7c7_covid-engine-2.3.2.jar
     program-args: --statebackend.default false --checkpoint hdfs://hadoop-hdfs-namenode:8020/flink/checkpoints --checkpoint.interval 300000
     savepoint-directory: hdfs://hadoop-hdfs-namenode:8020/flink/savepoints
     cooldown-duration: 150

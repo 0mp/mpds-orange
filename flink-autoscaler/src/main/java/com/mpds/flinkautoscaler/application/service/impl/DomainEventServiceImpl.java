@@ -62,25 +62,27 @@ public class DomainEventServiceImpl implements DomainEventService {
     private final static float UPPERTHRESHOLD = 3;
     private final static float LOWERTHRESHOLD = 0.4f;
 
-    private final static float MAX_SECONDS_TO_PROCESS_LAG = 18;
+    private final static float MAX_SECONDS_TO_PROCESS_LAG = 25;
     private final static float MAX_CPU_UTILIZATION = 60;
     private final static float MAX_MEMORY_USAGE = 0.9f;
 
-    private final static float MIN_SECONDS_TO_PROCESS_LAG = 8;
+    private final static float MIN_SECONDS_TO_PROCESS_LAG = 10;
     private final static float MIN_CPU_UTILIZATION = 0.4f;
     private final static float MIN_MEMORY_USAGE = 0.5f;
 
     private final static int LT_PREDICT_MINUTES = 5;
-    private final static float LT_ERROR_FRACTION_THRESHOLD = 0.5f;
+    private final static float LT_ERROR_FRACTION_THRESHOLD = 0.6f;
     private final static int STEPS_NO_ERROR_VIOLATION = 5;
 
     private final static float TARGET_RECORDS_OVERESTIMATION_FACTOR = 1.4f;
     private final static float FLINK_RECORDS_IN_DISCOUNT_FACTOR = 0.6f;
 
     // TODO Add Rescale time to table
-    private final static float EXPECTED_SECONDS_TO_RESCALE = 4;
-    private final static float LOWER_LAG_TIME_THRESHOLD = 4;
-    private final static int MAX_POSSIBLE_PARALLELISM = 8;
+    private final static float EXPECTED_SECONDS_TO_RESCALE = 8;
+    private final static float LOWER_LAG_TIME_THRESHOLD = 3;
+    private final static int MAX_POSSIBLE_PARALLELISM = 9;
+
+    private final static float FUTURE_THRESHOLD_SECONDS = 120;
 
     private int noConsecutiveErrorViolation = 0;
 
@@ -125,9 +127,6 @@ public class DomainEventServiceImpl implements DomainEventService {
     }
 
     public float getTimeToProcessLag(float kafkaLag, float kafkaMessagesPerSecond, float flinkRecordsInPerSecond){
-
-        // Records in are overestimated
-        flinkRecordsInPerSecond = flinkRecordsInPerSecond * FLINK_RECORDS_IN_DISCOUNT_FACTOR;
 
         if (Double.isNaN(kafkaLag)) {
             log.info("lag is NaN");
@@ -206,7 +205,12 @@ public class DomainEventServiceImpl implements DomainEventService {
 
                     float cpu = metricReported.getCpuUtilization();
                     float memory = metricReported.getMemoryUsage();
-                    float processLagSeconds = getTimeToProcessLag(metricReported.getKafkaLag(), metricReported.getKafkaMessagesPerSecond(), metricReported.getFlinkNumberRecordsIn());
+                    float flinkRecordsIn = metricReported.getFlinkNumberRecordsIn() * FLINK_RECORDS_IN_DISCOUNT_FACTOR;
+                    float lag = metricReported.getKafkaLag();
+                    float processLagSeconds = getTimeToProcessLag(lag, kafkaMessagesPerSecond, flinkRecordsIn);
+                    float averageRate = (aggregatePrediction + kafkaMessagesPerSecond) / 2;
+                    float estimateLag = Math.max(FUTURE_THRESHOLD_SECONDS * (averageRate - flinkRecordsIn) + lag, 0);
+                    float processFutureLagSeconds = getTimeToProcessLag(estimateLag, aggregatePrediction, flinkRecordsIn);
 
                     statsRecord.setLagLatency(processLagSeconds);
 
@@ -216,7 +220,7 @@ public class DomainEventServiceImpl implements DomainEventService {
 
                         log.info("current time to process Lag: " + processLagSeconds);
 
-                        if (processLagSeconds > MAX_SECONDS_TO_PROCESS_LAG ||
+                        if (processFutureLagSeconds > MAX_SECONDS_TO_PROCESS_LAG ||
                                 cpu > MAX_CPU_UTILIZATION ||
                                 memory > MAX_MEMORY_USAGE) {
 //                            metricReported.getMaxJobLatency() > 500
@@ -227,7 +231,7 @@ public class DomainEventServiceImpl implements DomainEventService {
                             rescale = true; // Should be true, left false for testing
                         }
                         // Scale Down
-                        if (processLagSeconds < MIN_SECONDS_TO_PROCESS_LAG &&
+                        if (processFutureLagSeconds < MIN_SECONDS_TO_PROCESS_LAG &&
                                 metricReported.getCpuUtilization() < MIN_CPU_UTILIZATION &&
                                 metricReported.getMemoryUsage() < MIN_MEMORY_USAGE) {
 //                            && metricReported.getMaxJobLatency() < 100
@@ -372,7 +376,11 @@ public class DomainEventServiceImpl implements DomainEventService {
         float kafkaLag = metricReported.getKafkaLag() + metricReported.getKafkaMessagesPerSecond() * EXPECTED_SECONDS_TO_RESCALE;
         float desiredTimeToProcessLag = (MAX_SECONDS_TO_PROCESS_LAG + MIN_SECONDS_TO_PROCESS_LAG) / 2;
         log.info("calculation of Target FlinkRecordsin: kafkaLag: " + kafkaLag + " - aggregatePrediction: " + aggregatePrediction + " - desiredTime: " + desiredTimeToProcessLag);
-        return TARGET_RECORDS_OVERESTIMATION_FACTOR * ((kafkaLag + Math.sqrt(Math.pow(kafkaLag, 2) + 4 * desiredTimeToProcessLag * aggregatePrediction * kafkaLag)) / (2 * desiredTimeToProcessLag));
+        double targetFlinkIn =  ((kafkaLag + Math.sqrt(Math.pow(kafkaLag, 2) + 4 * desiredTimeToProcessLag * aggregatePrediction * kafkaLag)) / (2 * desiredTimeToProcessLag));
+        if(targetFlinkIn > aggregatePrediction){
+            return targetFlinkIn;
+        }
+        return aggregatePrediction;
     }
 
 
@@ -380,7 +388,7 @@ public class DomainEventServiceImpl implements DomainEventService {
         log.debug("aggregatePrediction: " + aggregatePrediction);
         LocalDateTime currentDateTime = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
         String currentDateTimeString = currentDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'"));
-        float targetFlinkRecordsIn = (float) getTargetFlinkRecordsIn(metricReported, aggregatePrediction);
+        float targetFlinkRecordsIn = (float) getTargetFlinkRecordsIn(metricReported, aggregatePrediction) * TARGET_RECORDS_OVERESTIMATION_FACTOR;
         log.info("Target FlinkRecordsIn: " + targetFlinkRecordsIn);
 //        return this.flinkApiService.getCurrentFlinkClusterParallelism()
         return this.prometheusApiService.getPrometheusMetric(this.prometheusApiService.getFlinkNumOfTaskManagers(currentDateTimeString))
@@ -403,7 +411,7 @@ public class DomainEventServiceImpl implements DomainEventService {
                                 log.info("Current Flink Parallelism: " + currentParallel);
                                 log.info("above from DB: " + lookupResult.getT1().getParallelism());
                                 int aboveParallelism = lookupResult.getT1().getParallelism();
-                                double aboveRate = (double) lookupResult.getT1().getMaxRate();
+                                double aboveRate = lookupResult.getT1().getMaxRate();
                                 int infimumParallelism = lookupResult.getT2().getParallelism();
                                 double infimumRate = lookupResult.getT2().getMaxRate();
 
@@ -481,7 +489,7 @@ public class DomainEventServiceImpl implements DomainEventService {
     public int linearCalcFallBack(MetricReported metrics, float aggregatePrediction, int currentParallel, boolean scaleUp) {
 
         float desiredTimeToProcessLag = (MAX_SECONDS_TO_PROCESS_LAG + MIN_SECONDS_TO_PROCESS_LAG) / 2;
-        float kafkaLag = metrics.getKafkaLag(); // + metrics.getKafkaMessagesPerSecond() * EXPECTED_SECONDS_TO_RESCALE;
+        float kafkaLag = metrics.getKafkaLag() + metrics.getKafkaMessagesPerSecond() * EXPECTED_SECONDS_TO_RESCALE;
         float predictedTimeToProcessLag = getTimeToProcessLag(kafkaLag, aggregatePrediction, metrics.getFlinkNumberRecordsIn());
         int linearScaleParallel = (int) Math.ceil(currentParallel * (predictedTimeToProcessLag/desiredTimeToProcessLag));
         log.info("Linear Scaling - Target Parallelism: " + linearScaleParallel);
