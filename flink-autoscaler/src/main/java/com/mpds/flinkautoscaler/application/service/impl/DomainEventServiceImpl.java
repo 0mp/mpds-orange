@@ -3,6 +3,7 @@ package com.mpds.flinkautoscaler.application.service.impl;
 import com.mpds.flinkautoscaler.application.constants.FlinkConstants;
 import com.mpds.flinkautoscaler.application.constants.PredictionConstants;
 import com.mpds.flinkautoscaler.application.scheduler.FlinkPerformanceRetrieveScheduler;
+import com.mpds.flinkautoscaler.application.scheduler.tasks.MeasureFlinkRestartTimeTask;
 import com.mpds.flinkautoscaler.application.service.CacheService;
 import com.mpds.flinkautoscaler.application.service.DomainEventService;
 import com.mpds.flinkautoscaler.application.service.FlinkApiService;
@@ -21,10 +22,12 @@ import com.mpds.flinkautoscaler.port.adapter.rest.request.FlinkSavepointRequest;
 import com.mpds.flinkautoscaler.port.adapter.rest.response.FlinkRunJobResponse;
 import com.mpds.flinkautoscaler.port.adapter.rest.response.FlinkSavepointInfoResponse;
 import com.mpds.flinkautoscaler.port.adapter.rest.response.FlinkSavepointResponse;
+import com.mpds.flinkautoscaler.util.DateTimeUtil;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -95,8 +98,13 @@ public class DomainEventServiceImpl implements DomainEventService {
     @Setter
     private int actualParallelism;
 
+    public static long flinkRestartTimeInMillis;
 
-    public DomainEventServiceImpl(FlinkProps flinkProps, ClusterPerformanceBenchmarkRepository clusterPerformanceBenchmarkRepository, CacheService cacheService, FlinkApiService flinkApiService, PrometheusApiService prometheusApiService, FlinkPerformanceRetrieveScheduler flinkPerformanceRetrieveScheduler) {
+    private LocalDateTime flinkJobCanceledAt;
+
+    private final ThreadPoolTaskScheduler threadPoolTaskScheduler;
+
+    public DomainEventServiceImpl(FlinkProps flinkProps, ClusterPerformanceBenchmarkRepository clusterPerformanceBenchmarkRepository, CacheService cacheService, FlinkApiService flinkApiService, PrometheusApiService prometheusApiService, FlinkPerformanceRetrieveScheduler flinkPerformanceRetrieveScheduler, ThreadPoolTaskScheduler threadPoolTaskScheduler) {
         this.flinkProps = flinkProps;
         this.clusterPerformanceBenchmarkRepository = clusterPerformanceBenchmarkRepository;
         this.cacheService = cacheService;
@@ -106,16 +114,17 @@ public class DomainEventServiceImpl implements DomainEventService {
         this.flinkApiService = flinkApiService;
         this.prometheusApiService = prometheusApiService;
         this.flinkPerformanceRetrieveScheduler = flinkPerformanceRetrieveScheduler;
+        this.threadPoolTaskScheduler = threadPoolTaskScheduler;
     }
 
     private float dampenPredictions(float shortTerm, float longTerm, float kafkaMessages) {
         float prediction;
-        if(Float.isNaN(shortTerm) && Float.isNaN(longTerm)){
-            if(Float.isNaN(kafkaMessages)) return 0;
+        if (Float.isNaN(shortTerm) && Float.isNaN(longTerm)) {
+            if (Float.isNaN(kafkaMessages)) return 0;
             return kafkaMessages;
-        } else if(Float.isNaN(shortTerm)) {
+        } else if (Float.isNaN(shortTerm)) {
             prediction = longTerm;
-        } else if(Float.isNaN(longTerm)){
+        } else if (Float.isNaN(longTerm)) {
             prediction = shortTerm;
         } else {
             prediction = (shortTerm + longTerm) / 2;
@@ -126,19 +135,19 @@ public class DomainEventServiceImpl implements DomainEventService {
         return Math.max(prediction, LOWERTHRESHOLD * kafkaMessages);
     }
 
-    public float getTimeToProcessLag(float kafkaLag, float kafkaMessagesPerSecond, float flinkRecordsInPerSecond){
+    public float getTimeToProcessLag(float kafkaLag, float kafkaMessagesPerSecond, float flinkRecordsInPerSecond) {
 
         if (Double.isNaN(kafkaLag)) {
             log.info("lag is NaN");
             kafkaLag = 0;
         }
 
-        if(flinkRecordsInPerSecond == 0 || Double.isNaN(flinkRecordsInPerSecond)){
+        if (flinkRecordsInPerSecond == 0 || Double.isNaN(flinkRecordsInPerSecond)) {
             log.info("flinkRecordsInPerSecond is 0");
             return 0;
         }
 
-        if (kafkaLag == 0){
+        if (kafkaLag == 0) {
             Math.max(0, LOWER_LAG_TIME_THRESHOLD * (kafkaMessagesPerSecond - flinkRecordsInPerSecond));
         }
 
@@ -167,7 +176,7 @@ public class DomainEventServiceImpl implements DomainEventService {
         }
 
         float ltPrediciton = Float.NaN;
-        log.info("LT erro: " + longTermPrediction.calcPredictedMessagesPerSecond(timeWantedPredictionFor));
+        if(longTermPrediction!=null) log.info("LT error: " + longTermPrediction.calcPredictedMessagesPerSecond(timeWantedPredictionFor));
         if (longTermPrediction != null && noConsecutiveErrorViolation >= STEPS_NO_ERROR_VIOLATION) {
             ltPrediciton = longTermPrediction.calcPredictedMessagesPerSecond(timeWantedPredictionFor);
         } else if (longTermPrediction == null) {
@@ -289,7 +298,7 @@ public class DomainEventServiceImpl implements DomainEventService {
                                 log.info("Flink was in the state " + FlinkConstants.CANCELED_STATE + ": Rescale Cooldown: " + RESCALE_COOLDOWN.toString());
                                 return Mono.empty();
                             }
-                            if(this.cacheService.getLastFlinkSavepoint()!=null) {
+                            if (this.cacheService.getLastFlinkSavepoint() != null) {
                                 return startFlinkCluster(targetParallelism, metricReported, shortTermPrediction, longTermPrediction, cacheService.getLastFlinkSavepoint(), aggregatePrediction);
                             }
                             return startFlinkCluster(targetParallelism, metricReported, shortTermPrediction, longTermPrediction, null, aggregatePrediction);
@@ -306,31 +315,32 @@ public class DomainEventServiceImpl implements DomainEventService {
     public Mono<Void> rescaleFlinkCluster(int targetParallelism, MetricReported metricReported, ShorttermPredictionReported shortTermPrediction, LongtermPredictionReported longTermPrediction, float aggregatePrediction) {
         log.info(" ############################## NOW RESCALING THE JOB with parallelism:  " + targetParallelism + " ##############################");
         return this.createFlinkSavepoint(this.flinkProps.getJobId(), this.flinkProps.getSavepointDirectory(), true)
+                .flatMap(flinkSavepointResponse -> repeatGetFlinkSavePoint(flinkSavepointResponse, targetParallelism))
                 // Get savepoint path using the received request id
                 // Wait with the request for 7 seconds so that the savepoint can complete
-                .delayElement(Duration.ofSeconds(7))
-                .flatMap(flinkSavepointResponse -> {
-                    log.info("flinkSavepointResponse: " + flinkSavepointResponse.toString());
-                    return getFlinkSavepointInfo(this.flinkProps.getJobId(), flinkSavepointResponse.getRequestId())
-                            .flatMap(flinkSavepointInfoResponse -> {
-                                log.info("FLINKSAVEPOINT INFO RESPONSE:::::  " + flinkSavepointInfoResponse);
-                                if (flinkSavepointInfoResponse.getOperation() == null || flinkSavepointInfoResponse.getOperation().getLocation() == null) {
-                                    log.error("Flink saveppoint operation is null for Flink Request ID:  " + flinkSavepointResponse.getRequestId());
-                                    log.debug(("Trying to get savepoint again...."));
-                                    return Mono.empty()
-                                            .delayElement(Duration.ofSeconds(5))
-                                            .flatMap(o -> getFlinkSavepointInfo(this.flinkProps.getJobId(), flinkSavepointResponse.getRequestId())
-                                                    .flatMap(flinkSavepointInfoResponse1 -> {
-                                                        if (StringUtils.isEmpty(flinkSavepointInfoResponse1.getOperation().getLocation())) {
-                                                            log.error("Second call for savepoint path failed: " + flinkSavepointInfoResponse1.toString());
-                                                            return Mono.just(flinkSavepointInfoResponse1);
-                                                        }
-                                                        return Mono.just(flinkSavepointInfoResponse1);
-                                                    }));
-                                }
-                                return Mono.just(flinkSavepointInfoResponse);
-                            });
-                })
+//                .delayElement(Duration.ofSeconds(7))
+//                .flatMap(flinkSavepointResponse -> {
+//                    log.info("flinkSavepointResponse: " + flinkSavepointResponse.toString());
+//                    return getFlinkSavepointInfo(this.flinkProps.getJobId(), flinkSavepointResponse.getRequestId())
+//                            .flatMap(flinkSavepointInfoResponse -> {
+//                                log.info("FLINKSAVEPOINT INFO RESPONSE:::::  " + flinkSavepointInfoResponse);
+//                                if (flinkSavepointInfoResponse.getOperation() == null || flinkSavepointInfoResponse.getOperation().getLocation() == null) {
+//                                    log.error("Flink saveppoint operation is null for Flink Request ID:  " + flinkSavepointResponse.getRequestId());
+//                                    log.debug(("Trying to get savepoint again...."));
+//                                    return Mono.empty()
+//                                            .delayElement(Duration.ofSeconds(5))
+//                                            .flatMap(o -> getFlinkSavepointInfo(this.flinkProps.getJobId(), flinkSavepointResponse.getRequestId())
+//                                                    .flatMap(flinkSavepointInfoResponse1 -> {
+//                                                        if (StringUtils.isEmpty(flinkSavepointInfoResponse1.getOperation().getLocation())) {
+//                                                            log.error("Second call for savepoint path failed: " + flinkSavepointInfoResponse1.toString());
+//                                                            return Mono.just(flinkSavepointInfoResponse1);
+//                                                        }
+//                                                        return Mono.just(flinkSavepointInfoResponse1);
+//                                                    }));
+//                                }
+//                                return Mono.just(flinkSavepointInfoResponse);
+//                            });
+//                })
 //                                    .delayElement(Duration.ofSeconds(5))
                 // Start the job with the new parallelism using the savepoint path created from before
                 .flatMap(flinkSavepointInfoResponse -> {
@@ -373,12 +383,12 @@ public class DomainEventServiceImpl implements DomainEventService {
                 }).then();
     }
 
-    public double getTargetFlinkRecordsIn(MetricReported metricReported, float aggregatePrediction){
+    public double getTargetFlinkRecordsIn(MetricReported metricReported, float aggregatePrediction) {
         float kafkaLag = metricReported.getKafkaLag() + metricReported.getKafkaMessagesPerSecond() * EXPECTED_SECONDS_TO_RESCALE;
         float desiredTimeToProcessLag = (MAX_SECONDS_TO_PROCESS_LAG + MIN_SECONDS_TO_PROCESS_LAG) / 2;
         log.info("calculation of Target FlinkRecordsin: kafkaLag: " + kafkaLag + " - aggregatePrediction: " + aggregatePrediction + " - desiredTime: " + desiredTimeToProcessLag);
-        double targetFlinkIn =  ((kafkaLag + Math.sqrt(Math.pow(kafkaLag, 2) + 4 * desiredTimeToProcessLag * aggregatePrediction * kafkaLag)) / (2 * desiredTimeToProcessLag));
-        if(targetFlinkIn > aggregatePrediction){
+        double targetFlinkIn = ((kafkaLag + Math.sqrt(Math.pow(kafkaLag, 2) + 4 * desiredTimeToProcessLag * aggregatePrediction * kafkaLag)) / (2 * desiredTimeToProcessLag));
+        if (targetFlinkIn > aggregatePrediction) {
             return targetFlinkIn;
         }
         return aggregatePrediction;
@@ -395,14 +405,15 @@ public class DomainEventServiceImpl implements DomainEventService {
         return this.prometheusApiService.getPrometheusMetric(this.prometheusApiService.getFlinkNumOfTaskManagers(currentDateTimeString))
                 .map(prometheusMetric -> {
                     log.debug("Prometheus - Flink number of task managers response: " + prometheusMetric.toString());
-                    if(prometheusMetric.getData().getResult() != null && prometheusMetric.getData().getResult().size() > 0) {
+                    if (prometheusMetric.getData().getResult() != null && prometheusMetric.getData().getResult().size() > 0) {
                         return Integer.parseInt(prometheusMetric.getData().getResult().get(0).getValue()[1].toString());
                     }
                     return 0;
                 })
                 .flatMap(currentParallel -> {
                     setActualParallelism(currentParallel);
-                    if(currentParallel==0) log.error("No task manager is running on the Flink cluster or the retrieved Prometheus metric is not correct!");
+                    if (currentParallel == 0)
+                        log.error("No task manager is running on the Flink cluster or the retrieved Prometheus metric is not correct!");
                     log.debug("currentParallel: " + currentParallel);
                     statsRecord.setParallelism(currentParallel);
                     Mono<ClusterPerformanceBenchmark> infimumParallelismMaxRate = this.clusterPerformanceBenchmarkRepository.findInfimumParallelismWithMaxRate(targetFlinkRecordsIn).defaultIfEmpty(new ClusterPerformanceBenchmark());//.switchIfEmpty(this.clusterPerformanceBenchmarkRepository.findOptimalParallelismWithMaxRate(targetFlinkRecordsIn));
@@ -416,14 +427,14 @@ public class DomainEventServiceImpl implements DomainEventService {
                                 int infimumParallelism = lookupResult.getT2().getParallelism();
                                 double infimumRate = lookupResult.getT2().getMaxRate();
 
-                                if(infimumParallelism > 0){
+                                if (infimumParallelism > 0) {
                                     log.info("infimum from db: " + infimumParallelism);
                                 }
 
                                 if (scaleUp) {
-                                    if(aboveParallelism > currentParallel){
+                                    if (aboveParallelism > currentParallel) {
 
-                                        if(infimumParallelism > 0){
+                                        if (infimumParallelism > 0) {
                                             return considerInfimumExploration(aboveParallelism, aboveRate, infimumParallelism, infimumRate, targetFlinkRecordsIn);
                                         }
                                     } else {
@@ -431,7 +442,6 @@ public class DomainEventServiceImpl implements DomainEventService {
                                     }
                                 }
                                 if (!scaleUp) {
-
                                     if(aboveParallelism < currentParallel){
                                         if(infimumParallelism > 0) {
                                             return considerInfimumExploration(aboveParallelism, aboveRate, infimumParallelism, infimumRate, targetFlinkRecordsIn);
@@ -469,15 +479,15 @@ public class DomainEventServiceImpl implements DomainEventService {
 //        return newParallel;
     }
 
-    public int considerInfimumExploration(int aboveParallelism, double aboveRate, int infimumParallelism, double infimumRate, double targetFlinkRecordsIn){
+    public int considerInfimumExploration(int aboveParallelism, double aboveRate, int infimumParallelism, double infimumRate, double targetFlinkRecordsIn) {
         int dist = aboveParallelism - infimumParallelism;
-        if(dist > 1){
-            double estimatedRate =  infimumRate + (aboveRate - infimumRate)/dist * (dist-1.1);
-            if(Math.abs(estimatedRate - targetFlinkRecordsIn) < Math.abs(aboveRate - targetFlinkRecordsIn)){
+        if (dist > 1) {
+            double estimatedRate = infimumRate + (aboveRate - infimumRate) / dist * (dist - 1.1);
+            if (Math.abs(estimatedRate - targetFlinkRecordsIn) < Math.abs(aboveRate - targetFlinkRecordsIn)) {
                 log.info("infimum exploration occured: " + (aboveParallelism - 1));
                 return aboveParallelism - 1;
             }
-        } else if (infimumParallelism > aboveParallelism){
+        } else if (infimumParallelism > aboveParallelism) {
             log.info("Table inconsistency: Switching to higher parallelism with lower rate for exploration");
             return infimumParallelism;
         }
@@ -495,13 +505,11 @@ public class DomainEventServiceImpl implements DomainEventService {
         float desiredTimeToProcessLag = (MAX_SECONDS_TO_PROCESS_LAG + MIN_SECONDS_TO_PROCESS_LAG) / 2;
         float kafkaLag = metrics.getKafkaLag() + metrics.getKafkaMessagesPerSecond() * EXPECTED_SECONDS_TO_RESCALE;
         float predictedTimeToProcessLag = getTimeToProcessLag(kafkaLag, aggregatePrediction, metrics.getFlinkNumberRecordsIn());
-        int linearScaleParallel = (int) Math.ceil(currentParallel * (predictedTimeToProcessLag/desiredTimeToProcessLag));
+        int linearScaleParallel = (int) Math.ceil(currentParallel * (predictedTimeToProcessLag / desiredTimeToProcessLag));
         log.info("Linear Scaling - Target Parallelism: " + linearScaleParallel);
 
-        if(linearScaleParallel > MAX_POSSIBLE_PARALLELISM) return MAX_POSSIBLE_PARALLELISM;
-        if(linearScaleParallel < 1) return 1;
-
-        return linearScaleParallel;
+        if (linearScaleParallel > MAX_POSSIBLE_PARALLELISM) return MAX_POSSIBLE_PARALLELISM;
+        return Math.max(linearScaleParallel, 1);
 
     }
 
@@ -529,7 +537,7 @@ public class DomainEventServiceImpl implements DomainEventService {
     public Mono<FlinkRunJobResponse> runFlinkJob(String jarId, String jobId, String programArgs, int parallelism, String savepointPath) {
         log.info("Starting the Flink job using the savepoint: " + savepointPath);
         FlinkRunJobRequest flinkRunJobRequest;
-        if(!StringUtils.isEmpty(savepointPath)) {
+        if (!StringUtils.isEmpty(savepointPath)) {
             flinkRunJobRequest = new FlinkRunJobRequest(jobId, programArgs, parallelism, savepointPath);
         } else {
             flinkRunJobRequest = FlinkRunJobRequest.builder().jobId(jobId).programArgs(programArgs).parallelism(parallelism).build();
@@ -563,7 +571,36 @@ public class DomainEventServiceImpl implements DomainEventService {
                 });
     }
 
+    private Mono<FlinkSavepointInfoResponse> repeatGetFlinkSavePoint(FlinkSavepointResponse flinkSavepointResponse, int targetParallelism) {
+        this.flinkJobCanceledAt = DateTimeUtil.getCurrentUTCDateTime();
+        this.threadPoolTaskScheduler.schedule(new MeasureFlinkRestartTimeTask(this.flinkApiService, this.clusterPerformanceBenchmarkRepository,flinkJobCanceledAt, targetParallelism), Instant.now());
+        log.info("Flink Job canceled at: " + flinkJobCanceledAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")));
+//        Function<Flux<Long>, ? extends Publisher<?>> function = repeat -> repeat.zipWith(Flux.range(1, 5), (e, idx) -> idx)
+//                .flatMap(time -> Mono.delay(Duration.ofSeconds(time)));
+        return Mono.defer(() -> getFlinkSavepointInfo(this.flinkProps.getJobId(), flinkSavepointResponse.getRequestId())
+                .flatMap(flinkSavepointInfoResponse -> {
+                    log.info("FLINKSAVEPOINT INFO RESPONSE:::::  " + flinkSavepointInfoResponse);
+                    if (flinkSavepointInfoResponse.getOperation() == null || flinkSavepointInfoResponse.getOperation().getLocation() == null) {
+                        log.error("Flink saveppoint operation is null for Flink Request ID:  " + flinkSavepointResponse.getRequestId());
+                        return Mono.empty();
+                    }
+                    return Mono.just(flinkSavepointInfoResponse);
+                }))
+                .repeatWhenEmpty(20, longFlux -> longFlux.delayElements(Duration.ofSeconds(1)).doOnNext(it -> log.info("Repeating {}", it)));
+//                })).repeatWhenEmpty(10, longFlux -> getFlinkSavepointInfo(this.flinkProps.getJobId(), flinkSavepointResponse.getRequestId()))
+//                .then();
+    }
 
+
+    private Boolean hasFinishedSavePoint(String flinkSavepointRequestId, FlinkSavepointInfoResponse flinkSavepointInfoResponse) {
+        log.info("Checking if savepoint has been created successfully...");
+        if (flinkSavepointInfoResponse.getOperation() == null || flinkSavepointInfoResponse.getOperation().getLocation() == null) {
+            log.warn("Flink saveppoint operation is null for Flink Request ID:  " + flinkSavepointRequestId);
+            return false;
+//            return Mono.just(flinkSavepointInfoResponse);
+        }
+        return true;
+    }
 }
 // create savepoint response
 //{

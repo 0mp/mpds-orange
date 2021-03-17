@@ -35,8 +35,6 @@ public class MetricRetrieveScheduler {
     private final PrometheusApiService prometheusApiService;
 
 
-
-
     // Every 5 seconds
 //    @Scheduled(fixedDelay = 5000)
     // Every 10 seconds
@@ -61,47 +59,51 @@ public class MetricRetrieveScheduler {
 
 
         return Mono.zip(cpuMsg, kafkaLagMsg, kafkaLoadMsg, maxJobLatencyMsg, memMsg, flinkNumRecordsIn).map(tuple -> {
-            float cpu=0.0f;
-            if(tuple.getT1().getData().getResult().size()>0) {
+            float cpu = 0.0f;
+            if (tuple.getT1().getData().getResult().size() > 0) {
                 log.debug("CPU of Flink: " + tuple.getT1().getData().toString());
-                if(tuple.getT1().getData().getResult().get(0).getValue()[1].toString().equals("+Inf")) {
-                    cpu=1f;
+                if (tuple.getT1().getData().getResult().get(0).getValue()[1].toString().equals("+Inf")) {
+                    cpu = 1f;
                 } else {
                     cpu = Float.parseFloat(tuple.getT1().getData().getResult().get(0).getValue()[1].toString());
                 }
                 log.info("current cpu: " + cpu);
             }
 
-            float kafkaLag=0.0f;
-            if(tuple.getT2().getData().getResult().size()>0) {
+            float kafkaLag = 0.0f;
+            if (tuple.getT2().getData().getResult().size() > 0) {
                 kafkaLag = Float.parseFloat(tuple.getT2().getData().getResult().get(0).getValue()[1].toString());
                 log.info("current lag: " + kafkaLag);
             }
 
-            float kafkaLoad=0.0f;
-            if(tuple.getT3().getData().getResult().size()>0) {
+            float kafkaLoad = 0.0f;
+            if (tuple.getT3().getData().getResult().size() > 0) {
 //                kafkaLoad = Float.parseFloat(tuple.getT3().getData().getResult().get(0).getValue()[1].toString());
 
-                for(Result result : tuple.getT3().getData().getResult()) {
-                    if(this.prometheusProps.getSourceTopic().equalsIgnoreCase(result.getMetric().getTopic())) {
+                for (Result result : tuple.getT3().getData().getResult()) {
+                    if (this.prometheusProps.getSourceTopic().equalsIgnoreCase(result.getMetric().getTopic())) {
                         kafkaLoad = Float.parseFloat(result.getValue()[1].toString());
                         log.info("current load: " + kafkaLoad);
                     }
                 }
             }
 
-            float maxJobLatency=0.0f;
-            if(tuple.getT4().getData().getResult().size()>0) {
+            float maxJobLatency = 0.0f;
+            if (tuple.getT4().getData().getResult().size() > 0) {
                 maxJobLatency = Float.parseFloat(tuple.getT4().getData().getResult().get(0).getValue()[1].toString());
             }
 
-            float mem=0.0f;
-            if(tuple.getT5().getData().getResult().size()>0) {
-                mem = Float.parseFloat(tuple.getT5().getData().getResult().get(0).getValue()[1].toString());
+            float mem = 0.0f;
+            if (tuple.getT5().getData().getResult().size() > 0) {
+                try {
+                    mem = Float.parseFloat(tuple.getT5().getData().getResult().get(0).getValue()[1].toString());
+                } catch (NumberFormatException nfe) {
+                    log.error("Received non numeric memory value for Flink from Prometheus: " + tuple.getT5().getData().getResult().get(0).getValue()[1].toString());
+                    log.warn("Please, check if Flink is still running!");
+                }
             }
-
-            float flinkNumberRecordsIn=0.0f;
-            if(tuple.getT6().getData().getResult().size()>0) {
+            float flinkNumberRecordsIn = 0.0f;
+            if (tuple.getT6().getData().getResult().size() > 0) {
                 flinkNumberRecordsIn = Float.parseFloat(tuple.getT6().getData().getResult().get(0).getValue()[1].toString());
             }
 

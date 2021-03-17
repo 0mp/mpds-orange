@@ -1,11 +1,11 @@
 package com.mpds.flinkautoscaler.infrastructure.repository;
 
 import com.mpds.flinkautoscaler.domain.model.ClusterPerformanceBenchmark;
+import org.springframework.data.r2dbc.repository.Modifying;
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Mono;
-import reactor.util.function.Tuple2;
 
 @Repository
 public interface ClusterPerformanceBenchmarkRepository extends ReactiveCrudRepository<ClusterPerformanceBenchmark, Long> {
@@ -26,4 +26,8 @@ public interface ClusterPerformanceBenchmarkRepository extends ReactiveCrudRepos
 
     @Query("SELECT max_rate FROM cluster_performance_benchmark WHERE parallelism = :aggregatePrediction")
     Mono<Integer> getMaxRateOfParallelism(int parallelism);
+
+    @Modifying
+    @Query("UPDATE cluster_performance_benchmark SET max_rate = :maxRate where parallelism = :parallelism AND max_rate < :maxRate")
+    Mono<Integer> updateMaxRateForParallelism(int maxRate, int parallelism);
 }

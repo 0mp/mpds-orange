@@ -31,7 +31,7 @@ public class ClusterPerformanceBenchmark {
     private int parallelism;
 
     @Column("restart_time")
-    private int restartTime;
+    private long restartTime;
 
     @Column("recovery_time")
     private int recoveryTime;
