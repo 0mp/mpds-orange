@@ -5,7 +5,6 @@ import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Mono;
-import reactor.util.function.Tuple2;
 
 @Repository
 public interface ClusterPerformanceBenchmarkRepository extends ReactiveCrudRepository<ClusterPerformanceBenchmark, Long> {
@@ -21,7 +20,7 @@ public interface ClusterPerformanceBenchmarkRepository extends ReactiveCrudRepos
     @Query("SELECT * FROM cluster_performance_benchmark WHERE max_rate > :aggregatePrediction ORDER BY max_rate ASC LIMIT 1")
     Mono<ClusterPerformanceBenchmark> findOptimalParallelismWithMaxRate(float aggregatePrediction);
 
-    @Query("SELECT * FROM cluster_performance_benchmark WHERE max_rate < :aggregatePrediction ORDER BY max_rate DSC LIMIT 1")
+    @Query("SELECT * FROM cluster_performance_benchmark WHERE max_rate < :aggregatePrediction ORDER BY max_rate DESC LIMIT 1")
     Mono<ClusterPerformanceBenchmark> findInfimumParallelismWithMaxRate(float aggregatePrediction);
 
     @Query("SELECT max_rate FROM cluster_performance_benchmark WHERE parallelism = :aggregatePrediction")

@@ -29,8 +29,7 @@ public class FlinkApiServiceImpl implements FlinkApiService {
     }
 
     @Override
-    public Mono<Integer>
-    getCurrentFlinkClusterParallelism(){
+    public Mono<Integer> getCurrentFlinkClusterParallelism(){
         return this.flinkWebClient.get()
                 .uri(FLINK_JOB_DETAILS_PATH, this.flinkProps.getJobId())
                 .retrieve()
