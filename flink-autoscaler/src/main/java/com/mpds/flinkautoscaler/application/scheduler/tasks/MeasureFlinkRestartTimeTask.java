@@ -40,7 +40,7 @@ public class MeasureFlinkRestartTimeTask implements Runnable {
                     }
                     return Mono.empty();
                 })
-                .repeatWhenEmpty(20, longFlux -> longFlux.delayElements(Duration.ofSeconds(1)).doOnNext(it -> log.info("Repeating {}", it)))
+                .repeatWhenEmpty(20, longFlux -> longFlux.delayElements(Duration.ofSeconds(1)).doOnNext(it -> log.info("Wait until Flink cluster is running again... {}", it)))
                 .flatMap(s -> this.clusterPerformanceBenchmarkRepository.findFirstByParallelism(targetParallelism)
                         .flatMap(clusterPerformanceBenchmark -> {
                             if(this.flinkRestartTimeInMillis >clusterPerformanceBenchmark.getRestartTime()) {

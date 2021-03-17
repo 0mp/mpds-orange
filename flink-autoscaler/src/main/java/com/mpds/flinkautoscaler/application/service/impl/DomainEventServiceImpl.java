@@ -176,7 +176,7 @@ public class DomainEventServiceImpl implements DomainEventService {
         }
 
         float ltPrediciton = Float.NaN;
-        log.info("LT erro: " + longTermPrediction.calcPredictedMessagesPerSecond(timeWantedPredictionFor));
+        if(longTermPrediction!=null) log.info("LT error: " + longTermPrediction.calcPredictedMessagesPerSecond(timeWantedPredictionFor));
         if (longTermPrediction != null && noConsecutiveErrorViolation >= STEPS_NO_ERROR_VIOLATION) {
             ltPrediciton = longTermPrediction.calcPredictedMessagesPerSecond(timeWantedPredictionFor);
         } else if (longTermPrediction == null) {
