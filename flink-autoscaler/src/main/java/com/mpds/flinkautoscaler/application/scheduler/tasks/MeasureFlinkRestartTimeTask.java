@@ -50,7 +50,7 @@ public class MeasureFlinkRestartTimeTask implements Runnable {
                 .flatMap(s -> this.clusterPerformanceBenchmarkRepository.findFirstByParallelism(targetParallelism)
                         .flatMap(clusterPerformanceBenchmark -> {
                             if(this.flinkRestartTimeInMillis >clusterPerformanceBenchmark.getRestartTime()) {
-                                log.info("<MeasureFlinkRestartTimeTask> Inserting higher restartTime to the performance table: " + this.flinkRestartTimeInMillis + "(secs) for parallelism <" + this.targetParallelism+">");
+                                log.info("<MeasureFlinkRestartTimeTask> Inserting higher restartTime to the performance table: " + this.flinkRestartTimeInMillis + " (millis) for parallelism <" + this.targetParallelism+">");
                                 clusterPerformanceBenchmark.setRestartTime(this.flinkRestartTimeInMillis);
                                 return this.clusterPerformanceBenchmarkRepository.save(clusterPerformanceBenchmark);
                             }

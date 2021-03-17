@@ -139,6 +139,7 @@ public class FlinkPerformanceRetrieveScheduler {
                                 .flatMap(clusterPerformanceBenchmark1 -> {
                                     clusterPerformanceBenchmark.setId(clusterPerformanceBenchmark1.getId());
                                     clusterPerformanceBenchmark.setCreatedAt(LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC));
+                                    clusterPerformanceBenchmark.setRestartTime(clusterPerformanceBenchmark1.getRestartTime());
                                     if(clusterPerformanceBenchmark.getMaxRate()<clusterPerformanceBenchmark1.getMaxRate()) {
                                         clusterPerformanceBenchmark.setMaxRate(clusterPerformanceBenchmark1.getMaxRate());
                                         log.debug("---- UPDATING PARALLELISM for  " + clusterPerformanceBenchmark.getParallelism() + " with maxRate: " + clusterPerformanceBenchmark.getMaxRate());
