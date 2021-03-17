@@ -134,7 +134,7 @@ public class FlinkPerformanceRetrieveScheduler {
 //                    if(metricTriggerPredictionsSnapshot != null) {}
 //                        clusterPerformanceBenchmark.setMaxRate(((int) metricTriggerPredictionsSnapshot.getMetricTrigger().getKafkaMessagesPerSecond()));
 //                        clusterPerformanceBenchmark.setMaxRate((int) flinkNumRecordsOutPerSecond);
-                    if( (alwaysInsertClusterPerformanceToDB) || (metricTriggerPredictionsSnapshot!=null && currentParallelism == metricTriggerPredictionsSnapshot.getTargetParallelism() && Duration.between(metricTriggerPredictionsSnapshot.getSnapshotTime(), LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC)).abs().toSeconds()>30)) {
+                    if( (alwaysInsertClusterPerformanceToDB) ) {
                         return this.clusterPerformanceBenchmarkRepository.findFirstByParallelism(currentParallelism)
                                 .flatMap(clusterPerformanceBenchmark1 -> {
                                     clusterPerformanceBenchmark.setId(clusterPerformanceBenchmark1.getId());
@@ -148,6 +148,8 @@ public class FlinkPerformanceRetrieveScheduler {
                                     return this.clusterPerformanceBenchmarkRepository.save(clusterPerformanceBenchmark);
                                 })
                                 .switchIfEmpty(this.clusterPerformanceBenchmarkRepository.save(clusterPerformanceBenchmark));
+                    } else if(metricTriggerPredictionsSnapshot!=null && currentParallelism == metricTriggerPredictionsSnapshot.getTargetParallelism() && Duration.between(metricTriggerPredictionsSnapshot.getSnapshotTime(), LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC)).abs().toSeconds()>30) {
+                        return this.clusterPerformanceBenchmarkRepository.updateMaxRateForParallelism(clusterPerformanceBenchmark.getMaxRate(), clusterPerformanceBenchmark.getParallelism());
                     }
                     return Mono.empty();
                 }).subscribe();

@@ -40,7 +40,7 @@ public class MeasureFlinkRestartTimeTask implements Runnable {
                     if (FlinkConstants.RUNNING_STATE.equals(flinkState)) {
                         this.flinkRestartTimeInMillis = Duration.between(this.flinkJobCanceledAt, currentUTCDateTime).abs().toMillis();
                         log.info("<MeasureFlinkRestartTimeTask> Flink job is now running again at " + currentUTCDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")));
-                        log.info("<MeasureFlinkRestartTimeTask> Restart Duration: " + flinkRestartTimeInMillis);
+                        log.info("<MeasureFlinkRestartTimeTask> Restart Duration: " + flinkRestartTimeInMillis + " for targetParallelism " + targetParallelism);
                         DomainEventServiceImpl.flinkRestartTimeInMillis = flinkRestartTimeInMillis;
                         return Mono.just(flinkState);
                     }
@@ -54,7 +54,7 @@ public class MeasureFlinkRestartTimeTask implements Runnable {
                                 clusterPerformanceBenchmark.setRestartTime(this.flinkRestartTimeInMillis);
                                 return this.clusterPerformanceBenchmarkRepository.save(clusterPerformanceBenchmark);
                             }
-                            return Mono.empty();
+                            return Mono.just(1);
                         })
                         .switchIfEmpty(this.clusterPerformanceBenchmarkRepository.save(flinkClusterRestartTime))
                 )
