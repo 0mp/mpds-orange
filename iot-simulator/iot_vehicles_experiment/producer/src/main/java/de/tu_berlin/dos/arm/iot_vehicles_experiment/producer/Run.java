@@ -54,7 +54,7 @@ public class Run {
         // create timeseries from file
         String fileName = producerProps.getProperty("dataset.fileName");
         File file = FileReader.GET.read(fileName, File.class);
-        TimeSeries ts = new TimeSeries(FileParser.GET.csv(file, "\\|", true), 86400);
+        TimeSeries ts = new TimeSeries(FileParser.GET.csv(file, "\\|", true), 500000);
 
         // topic to write events to
         String topic = producerProps.getProperty("kafka.topic");
