@@ -10,7 +10,6 @@ logging:
 #        r2dbc: DEBUG
 r2dbc:
   postgres:
-
     database: postgres
     hostname: localhost
     password: postgres
@@ -33,8 +32,7 @@ kafka:
   bootstrap-server: 35.246.148.223:31090
   st-prediction-topic: st-prediction
   lt-prediction-topic: lt-prediction
-  topic: iot-vehicles-events
-# topic: metric
+  topic: metric
   client-id-config: flink-autoscaler
   acks-config: all
 metrics-server:
