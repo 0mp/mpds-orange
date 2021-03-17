@@ -47,7 +47,7 @@ autoscaler:
     jar-id: a9d21eff-13ab-4511-a6d7-88e6bc489a57_covid-engine-2.3.2.jar
     program-args: --statebackend.default false --checkpoint hdfs://hadoop-hdfs-namenode:8020/flink/checkpoints --checkpoint.interval 300000
     savepoint-directory: hdfs://hadoop-hdfs-namenode:8020/flink/savepoints
-    cooldown-duration: 150
+    cooldown-duration: 200
 spring:
   cloud:
     stream:
