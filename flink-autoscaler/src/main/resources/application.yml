@@ -30,21 +30,23 @@ r2dbc:
 # Kafka config
 kafka:
 #  bootstrap-server: localhost:9092
-  bootstrap-server: 35.246.236.92:31090
+  bootstrap-server: 35.246.148.223:31090
   st-prediction-topic: st-prediction
   lt-prediction-topic: lt-prediction
-  topic: metric
+  topic: iot-vehicles-events
+# topic: metric
   client-id-config: flink-autoscaler
   acks-config: all
 metrics-server:
   prometheus:
-    base-url: http://35.246.236.92:30090
-    source-topic: covid
+    base-url: http://35.246.148.223:30090
+    source-topic: iot-vehicles-events
+#    source-topic: covid
 autoscaler:
   flink:
     base-url: http://34.107.29.56:8081
-    job-id: 711dd68449714d770164a1c0a52853f9
-    jar-id: 8bbd5dbe-ddb1-4b1c-8857-4229daf51ad7_covid-engine-2.3.2.jar
+    job-id: d4f5357eb704c2ba455ab4c3dbb8b4ac
+    jar-id: 811833b9-dc12-4624-8482-8ead7f06ff11_processor-1.0-SNAPSHOT.jar
     program-args: --statebackend.default false --checkpoint hdfs://hadoop-hdfs-namenode:8020/flink/checkpoints --checkpoint.interval 300000
     savepoint-directory: hdfs://hadoop-hdfs-namenode:8020/flink/savepoints
     cooldown-duration: 200
@@ -59,7 +61,7 @@ spring:
           longTermPredictions-in-0: long-term-predictions
       kafka:
         binder:
-          brokers: 35.246.236.92:31090
+          brokers: 35.246.148.223:31090
 #          brokers: localhost:9092
       bindings:
         prometheus-metrics:
