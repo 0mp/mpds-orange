@@ -23,13 +23,13 @@ if ! kubectl describe serviceaccounts | grep -q '^Name:                flink-ser
 	kubectl create clusterrolebinding flink-role-binding-flink --clusterrole=edit --serviceaccount=default:flink-service-account
 fi
 
-echo quit | "$flink_dir/bin/kubernetes-session.sh" \
+"$flink_dir/bin/kubernetes-session.sh" \
 	-Dkubernetes.service-account=flink-service-account \
 	-Dkubernetes.cluster-id=flink-cluster \
 	-Dkubernetes.container.image="$docker_image" \
 	-Dkubernetes.container.image.pull-policy=Always \
 	-Dkubernetes.jobmanager.cpu=2.0 \
-	-Dexecution.attached=true \
+	-Dexecution.attached=false \
 	-Dkubernetes.jobmanager.annotations=prometheus.io/scrape:'true',prometheus.io/port:'9999' \
 	-Dkubernetes.taskmanager.annotations=prometheus.io/scrape:'true',prometheus.io/port:'9999' \
 	-Dmetrics.latency.granularity=OPERATOR \
@@ -40,4 +40,5 @@ echo quit | "$flink_dir/bin/kubernetes-session.sh" \
 	-Dmetrics.reporter.jmx.class=org.apache.flink.metrics.jmx.JMXReporter \
 	-Dmetrics.reporter.jmx.port=8789 \
 	-Dstate.savepoints.dir=hdfs://hadoop-hdfs-namenode:8020/flink/savepoints \
-	-Djobmanager.memory.jvm-metaspace.size="1024m"
+	-Djobmanager.memory.jvm-metaspace.size="1024m" \
+	-Djobmanager.memory.process.size="4g"

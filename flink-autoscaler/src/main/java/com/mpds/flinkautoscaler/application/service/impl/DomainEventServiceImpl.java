@@ -2,6 +2,7 @@ package com.mpds.flinkautoscaler.application.service.impl;
 
 import com.mpds.flinkautoscaler.application.constants.FlinkConstants;
 import com.mpds.flinkautoscaler.application.constants.PredictionConstants;
+import com.mpds.flinkautoscaler.application.scheduler.FlinkPerformanceRetrieveScheduler;
 import com.mpds.flinkautoscaler.application.service.CacheService;
 import com.mpds.flinkautoscaler.application.service.DomainEventService;
 import com.mpds.flinkautoscaler.application.service.FlinkApiService;
@@ -23,7 +24,6 @@ import com.mpds.flinkautoscaler.port.adapter.rest.response.FlinkSavepointRespons
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.relational.core.sql.In;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -46,6 +46,7 @@ public class DomainEventServiceImpl implements DomainEventService {
     private final CacheService cacheService;
     private final FlinkApiService flinkApiService;
     private final PrometheusApiService prometheusApiService;
+    private final FlinkPerformanceRetrieveScheduler flinkPerformanceRetrieveScheduler;
 
     private final ClusterPerformanceBenchmarkRepository clusterPerformanceBenchmarkRepository;
 
@@ -95,7 +96,7 @@ public class DomainEventServiceImpl implements DomainEventService {
     private int actualParallelism;
 
 
-    public DomainEventServiceImpl(FlinkProps flinkProps, ClusterPerformanceBenchmarkRepository clusterPerformanceBenchmarkRepository, CacheService cacheService, FlinkApiService flinkApiService, PrometheusApiService prometheusApiService) {
+    public DomainEventServiceImpl(FlinkProps flinkProps, ClusterPerformanceBenchmarkRepository clusterPerformanceBenchmarkRepository, CacheService cacheService, FlinkApiService flinkApiService, PrometheusApiService prometheusApiService, FlinkPerformanceRetrieveScheduler flinkPerformanceRetrieveScheduler) {
         this.flinkProps = flinkProps;
         this.clusterPerformanceBenchmarkRepository = clusterPerformanceBenchmarkRepository;
         this.cacheService = cacheService;
@@ -104,6 +105,7 @@ public class DomainEventServiceImpl implements DomainEventService {
                 .build();
         this.flinkApiService = flinkApiService;
         this.prometheusApiService = prometheusApiService;
+        this.flinkPerformanceRetrieveScheduler = flinkPerformanceRetrieveScheduler;
     }
 
     private float dampenPredictions(float shortTerm, float longTerm, float kafkaMessages) {
@@ -339,6 +341,8 @@ public class DomainEventServiceImpl implements DomainEventService {
                 // Save last rescale action
                 .flatMap(flinkRunJobResponse -> {
                     log.info("The job has been started successfully: " + flinkRunJobResponse.toString());
+                    // Change flag so that measurement is only inserted to DB when rules are fulfilled after rescale
+                    this.flinkPerformanceRetrieveScheduler.setAlwaysInsertClusterPerformanceToDB(false);
                     setActualParallelism(targetParallelism);
                     LocalDateTime currentDateTime = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
                     MetricTriggerPredictionsSnapshot metricTriggerPredictionsSnapshot = new MetricTriggerPredictionsSnapshot(flinkRunJobResponse.getJobId(), currentDateTime, metricReported, shortTermPrediction, longTermPrediction, targetParallelism, aggregatePrediction);
