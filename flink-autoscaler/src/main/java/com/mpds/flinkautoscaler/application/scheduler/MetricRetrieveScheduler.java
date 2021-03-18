@@ -121,13 +121,6 @@ public class MetricRetrieveScheduler {
                     cpu,
                     mem,
                     kafkaLag);
-//            PredictionReported domainEvent = new PredictionReported(
-//                    UUID.randomUUID().toString(),
-//                    LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC),
-//                    1,
-//                    LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC).toString(),
-//                    UUID.randomUUID().toString()
-//                    );
             log.info(domainEvent.toString());
 
             return domainEvent;

@@ -62,6 +62,7 @@ public class MeasureFlinkRestartTimeTask implements Runnable {
     }
 
     private Mono<ClusterPerformanceBenchmark> persistNewClusterPerformanceBenchmark(ClusterPerformanceBenchmark flinkClusterRestartTime) {
+        // Set true to avoid overriding values
         flinkClusterRestartTime.setNewEntry(true);
         return this.clusterPerformanceBenchmarkRepository.save(flinkClusterRestartTime);
     }
