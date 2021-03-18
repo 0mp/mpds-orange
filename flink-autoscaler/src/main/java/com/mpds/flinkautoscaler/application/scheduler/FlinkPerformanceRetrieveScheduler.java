@@ -1,7 +1,6 @@
 package com.mpds.flinkautoscaler.application.scheduler;
 
 import com.mpds.flinkautoscaler.application.service.CacheService;
-import com.mpds.flinkautoscaler.application.service.FlinkApiService;
 import com.mpds.flinkautoscaler.application.service.PrometheusApiService;
 import com.mpds.flinkautoscaler.domain.model.ClusterPerformanceBenchmark;
 import com.mpds.flinkautoscaler.domain.model.MetricTriggerPredictionsSnapshot;
@@ -14,7 +13,6 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
@@ -31,27 +29,20 @@ public class FlinkPerformanceRetrieveScheduler {
 
     private final ClusterPerformanceBenchmarkRepository clusterPerformanceBenchmarkRepository;
 
-    private final WebClient prometheusWebClient;
-
     private final PrometheusProps prometheusProps;
 
     private final PrometheusApiService prometheusApiService;
-
-    private final FlinkApiService flinkApiService;
 
     // Flag is changed when the first rescale has been carried out
     @Getter
     @Setter
     private Boolean alwaysInsertClusterPerformanceToDB = true;
 
-    public FlinkPerformanceRetrieveScheduler(CacheService cacheService, ClusterPerformanceBenchmarkRepository clusterPerformanceBenchmarkRepository, WebClient prometheusWebClient, PrometheusProps prometheusProps, PrometheusApiService prometheusApiService, FlinkApiService flinkApiService) {
+    public FlinkPerformanceRetrieveScheduler(CacheService cacheService, ClusterPerformanceBenchmarkRepository clusterPerformanceBenchmarkRepository, PrometheusProps prometheusProps, PrometheusApiService prometheusApiService) {
         this.cacheService = cacheService;
         this.clusterPerformanceBenchmarkRepository = clusterPerformanceBenchmarkRepository;
-        this.prometheusWebClient = prometheusWebClient;
-//        this.flinkProps = flinkProps;
         this.prometheusProps = prometheusProps;
         this.prometheusApiService = prometheusApiService;
-        this.flinkApiService = flinkApiService;
     }
 
     //    @Scheduled(fixedDelay = 15000)
@@ -63,7 +54,6 @@ public class FlinkPerformanceRetrieveScheduler {
 
         MetricTriggerPredictionsSnapshot metricTriggerPredictionsSnapshot = this.cacheService.getMetricTriggerPredictionsSnapshot("MetricTriggerPredictionsSnapshot");
 
-//        Mono<Integer> currentFlinkClusterParallelism = this.flinkApiService.getCurrentFlinkClusterParallelism();
         Mono<Integer> currentFlinkClusterParallelism = this.prometheusApiService.getPrometheusMetric(this.prometheusApiService.getFlinkNumOfTaskManagers(currentDateTimeString))
                 .map(prometheusMetric -> {
                     log.debug("[FlinkPerformanceRetrieveScheduler] Prometheus number of task managers response at <" + currentDateTimeString + "> : " + prometheusMetric.toString());
@@ -73,9 +63,7 @@ public class FlinkPerformanceRetrieveScheduler {
                     log.error("No Flink task managers were active reported from Prometheus at: " + currentDateTimeString);
                     return 0;
                 });
-//        return this.prometheusApiService.getPrometheusMetric(this.prometheusApiService.getFlinkNumOfTaskManagers(currentDateTimeString))
 
-//        Mono<PrometheusMetric> prometheusMetric = this.prometheusApiService.getPrometheusMetric(this.prometheusApiService.getFlinkNumRecordsOutPerSecond(currentDateTimeString));
         Mono<PrometheusMetric> prometheusMetric = this.prometheusApiService.getPrometheusMetric(this.prometheusApiService.getFlinkNumRecordsIn(currentDateTimeString));
 
         Mono<PrometheusMetric> kafkaLoadMsg = prometheusApiService.getPrometheusMetric(prometheusApiService.getKafkaMessagesPerSecond(currentDateTimeString));
@@ -87,8 +75,6 @@ public class FlinkPerformanceRetrieveScheduler {
 
                     float kafkaLoad = 0.0f;
                     if (tuple.getT3().getData().getResult().size() > 0) {
-//                kafkaLoad = Float.parseFloat(tuple.getT3().getData().getResult().get(0).getValue()[1].toString());
-
                         for (Result result : tuple.getT3().getData().getResult()) {
                             if (this.prometheusProps.getSourceTopic().equalsIgnoreCase(result.getMetric().getTopic())) {
                                 kafkaLoad = Float.parseFloat(result.getValue()[1].toString());
@@ -98,9 +84,6 @@ public class FlinkPerformanceRetrieveScheduler {
                     float flinkNumRecordsInPerSecond = 0.0f;
                     if (flinkMetric.getData().getResult() != null && flinkMetric.getData().getResult().size() > 0) {
                         flinkNumRecordsInPerSecond = Float.parseFloat(flinkMetric.getData().getResult().get(0).getValue()[1].toString());
-                        // Calculating average throughput of the current Flink cluster
-//                        flinkNumRecordsInPerSecond = (float) flinkMetric.getData().getResult().stream().mapToDouble(value -> Double.parseDouble((String) value.getValue()[1])).average().orElse(0);
-//                        double ltChoiceTemp = longTermPrediction.getPredictedWorkloads().stream().mapToInt(predictedWorkload -> (int) predictedWorkload.getValue()).average().orElse(0);
                     }
 
                     log.info("<<<<<<<---------->>>>>>> [START] *** EVALUATION RESULTS *** [START]  <<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>");
@@ -128,9 +111,7 @@ public class FlinkPerformanceRetrieveScheduler {
                             .numTaskmanagerPods(currentParallelism)
                             .maxRate((int) (flinkNumRecordsInPerSecond))
                             .build();
-//                    if(metricTriggerPredictionsSnapshot != null) {}
-//                        clusterPerformanceBenchmark.setMaxRate(((int) metricTriggerPredictionsSnapshot.getMetricTrigger().getKafkaMessagesPerSecond()));
-//                        clusterPerformanceBenchmark.setMaxRate((int) flinkNumRecordsOutPerSecond);
+
                     if ((alwaysInsertClusterPerformanceToDB)) {
                         return this.clusterPerformanceBenchmarkRepository.findFirstByParallelism(currentParallelism)
                                 .flatMap(foundClusterPerformanceBenchmarkFromDB -> {
@@ -138,12 +119,8 @@ public class FlinkPerformanceRetrieveScheduler {
                                     clusterPerformanceBenchmark.setCreatedAt(LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC));
                                     clusterPerformanceBenchmark.setRestartTime(foundClusterPerformanceBenchmarkFromDB.getRestartTime());
                                     if (clusterPerformanceBenchmark.getMaxRate() > foundClusterPerformanceBenchmarkFromDB.getMaxRate()) {
-//                                        clusterPerformanceBenchmark.setMaxRate(foundClusterPerformanceBenchmarkFromDB.getMaxRate());
-                                        log.debug("---- UPDATING PARALLELISM for  " + clusterPerformanceBenchmark.getParallelism() + " with maxRate: " + clusterPerformanceBenchmark.getMaxRate());
                                         return this.clusterPerformanceBenchmarkRepository.updateMaxRateForParallelism(clusterPerformanceBenchmark.getMaxRate(), clusterPerformanceBenchmark.getParallelism());
                                     }
-//                                    log.debug(clusterPerformanceBenchmark.toString());
-//                                    return this.clusterPerformanceBenchmarkRepository.save(clusterPerformanceBenchmark);
                                     return Mono.just(clusterPerformanceBenchmark);
                                 })
                                 .switchIfEmpty(persistNewClusterPerformanceBenchmark(clusterPerformanceBenchmark));
@@ -154,7 +131,7 @@ public class FlinkPerformanceRetrieveScheduler {
                                         return this.clusterPerformanceBenchmarkRepository.updateMaxRateForParallelism(clusterPerformanceBenchmark.getMaxRate(), foundClusterPerformanceBenchmarkFromDB.getParallelism())
                                                 .flatMap(numUpdatedEntries -> {
                                                     if (numUpdatedEntries > 0) {
-                                                        log.info("Updated records (" + numUpdatedEntries + ") for parallelism: " + clusterPerformanceBenchmark.getParallelism());
+                                                        log.info("Updated record (" + numUpdatedEntries + ") for parallelism " + clusterPerformanceBenchmark.getParallelism() + "and max rate " + clusterPerformanceBenchmark.getMaxRate());
                                                     } else {
                                                         log.warn("No entries were updated in the performance table!");
                                                     }
@@ -169,7 +146,7 @@ public class FlinkPerformanceRetrieveScheduler {
                 }).subscribe();
     }
 
-    public Mono<ClusterPerformanceBenchmark> persistNewClusterPerformanceBenchmark(ClusterPerformanceBenchmark clusterPerformanceBenchmark) {
+    private Mono<ClusterPerformanceBenchmark> persistNewClusterPerformanceBenchmark(ClusterPerformanceBenchmark clusterPerformanceBenchmark) {
         clusterPerformanceBenchmark.setNewEntry(true);
         return this.clusterPerformanceBenchmarkRepository.save(clusterPerformanceBenchmark);
     }

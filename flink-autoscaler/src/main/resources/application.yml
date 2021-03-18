@@ -7,7 +7,6 @@ logging:
       springframework:
         data:
           r2dbc: debug
-#        r2dbc: DEBUG
 r2dbc:
   postgres:
     database: postgres
@@ -38,14 +37,18 @@ kafka:
 metrics-server:
   prometheus:
     base-url: http://35.246.148.223:30090
+    # Use this topic for the experiment with the iot simulator
     source-topic: iot-vehicles-events
+    # Use this topic for the experiment with the covid simulator
 #    source-topic: covid
 autoscaler:
   flink:
     base-url: http://35.198.125.206:8081
     job-id: 8fc42deb05bd530bfed8047b95fe6632
     jar-id: b6b6e3db-dfee-4e27-bb5a-f9375804f12f_covid-engine-2.3.2.jar
+
 #    program-args: --statebackend.default false --checkpoint hdfs://hadoop-hdfs-namenode:8020/flink/checkpoints --checkpoint.interval 300000
+    # Use these Flink program args for the experiment with the iot simulator
     program-args: vehicles 35.246.173.215:31090,35.246.217.71:31092,35.246.217.71:31091 iot-vehicles-events iot-vehicles-notifications 1 30000
     savepoint-directory: hdfs://hadoop-hdfs-namenode:8020/flink/savepoints
     cooldown-duration: 200

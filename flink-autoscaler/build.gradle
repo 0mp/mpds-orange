@@ -25,11 +25,11 @@ ext {
 
 jib {
     to {
-        image = "eu.gcr.io/mpds-task-2/flink-autoscaler:$version"
+        image = "eu.gcr.io/mpds-task-orange/flink-autoscaler:$version"
     }
-    container {
-        environment= [SPRING_PROFILES_ACTIVE:'staging']
-    }
+//    container {
+//        environment= [SPRING_PROFILES_ACTIVE:'staging']
+//    }
 }
 
 dependencies {
@@ -38,7 +38,6 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
     implementation 'io.projectreactor.kafka:reactor-kafka:1.1.0.RELEASE'
     implementation("io.r2dbc:r2dbc-postgresql:0.8.2.RELEASE")
-    implementation 'org.mapstruct:mapstruct:1.4.2.Final'
     implementation 'org.springframework.cloud:spring-cloud-stream'
     implementation 'org.springframework.boot:spring-boot-starter-cache'
     compile group: 'org.springframework.cloud', name: 'spring-cloud-stream-binder-kafka'
@@ -48,9 +47,6 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'io.projectreactor:reactor-test'
-
-//    implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
-//    runtimeOnly("org.postgresql:postgresql")
 }
 
 dependencyManagement {

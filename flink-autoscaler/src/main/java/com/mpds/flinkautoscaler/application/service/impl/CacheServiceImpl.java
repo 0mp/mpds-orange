@@ -56,10 +56,4 @@ public class CacheServiceImpl implements CacheService {
         return savepointPath;
     }
 
-
-//    @Override
-//    @CachePut(value = "predictions", key = "#predictionReported.occurredOn")
-//    public PredictionReported cachePredictionReported(PredictionReported predictionReported) {
-//        return predictionReported;
-//    }
 }

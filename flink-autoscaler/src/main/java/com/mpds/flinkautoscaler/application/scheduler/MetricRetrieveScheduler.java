@@ -25,25 +25,17 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class MetricRetrieveScheduler {
 
-    // Used to query the metrics via REST
-//    private final WebClient webClient;
-
     private final PrometheusProps prometheusProps;
 
     private final DomainEventPublisherReactive domainEventPublisherReactive;
 
     private final PrometheusApiService prometheusApiService;
 
-
-    // Every 5 seconds
-//    @Scheduled(fixedDelay = 5000)
-    // Every 10 seconds
     @Scheduled(fixedDelay = 20000)
     public void scheduleMetricRetrieval() {
         log.info("Start retrieving metrics...");
 
         allPrometheusRequests().flatMap(this.domainEventPublisherReactive::sendMessages).subscribe();
-
     }
 
     private Mono<DomainEvent> allPrometheusRequests() {
@@ -112,22 +104,12 @@ public class MetricRetrieveScheduler {
                     kafkaLoad,
                     currentDateTime,
                     this.prometheusProps.getSourceTopic(),
-                    "",
                     maxJobLatency,
                     flinkNumberRecordsIn,
-                    0,
-                    0,
                     true,
                     cpu,
                     mem,
                     kafkaLag);
-//            PredictionReported domainEvent = new PredictionReported(
-//                    UUID.randomUUID().toString(),
-//                    LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC),
-//                    1,
-//                    LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC).toString(),
-//                    UUID.randomUUID().toString()
-//                    );
             log.info(domainEvent.toString());
 
             return domainEvent;

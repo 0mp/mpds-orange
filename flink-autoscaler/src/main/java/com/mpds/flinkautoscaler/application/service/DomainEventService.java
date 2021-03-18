@@ -6,4 +6,5 @@ import reactor.core.publisher.Mono;
 public interface DomainEventService {
 
     Mono<Void> processDomainEvent(MetricReported metricReported);
+
 }

@@ -8,6 +8,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Configuration
 public class WebClientConfig {
 
+    // Default WebClient to query data from Prometheus
     @Bean
     public WebClient webClient(PrometheusProps prometheusProps){
         return WebClient.builder()
