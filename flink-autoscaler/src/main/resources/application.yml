@@ -42,10 +42,11 @@ metrics-server:
 #    source-topic: covid
 autoscaler:
   flink:
-    base-url: http://34.107.29.56:8081
-    job-id: adbe51b60c2590b4ef90539797b8538c
-    jar-id: 811833b9-dc12-4624-8482-8ead7f06ff11_processor-1.0-SNAPSHOT.jar
-    program-args: --statebackend.default false --checkpoint hdfs://hadoop-hdfs-namenode:8020/flink/checkpoints --checkpoint.interval 300000
+    base-url: http://35.246.185.132:8081
+    job-id: b6089acb932cf7a6daab96aa7a4e93f4
+    jar-id: 9d7bf127-bb86-4ef1-8255-ed4e7eb5c23d_processor-1.0-SNAPSHOT.jar
+#    program-args: --statebackend.default false --checkpoint hdfs://hadoop-hdfs-namenode:8020/flink/checkpoints --checkpoint.interval 300000
+    program-args: vehicles 35.246.173.215:31090,35.246.217.71:31092,35.246.217.71:31091 iot-vehicles-events iot-vehicles-notifications 1 30000
     savepoint-directory: hdfs://hadoop-hdfs-namenode:8020/flink/savepoints
     cooldown-duration: 200
 spring:
