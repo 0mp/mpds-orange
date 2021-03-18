@@ -27,9 +27,9 @@ jib {
     to {
         image = "eu.gcr.io/mpds-task-orange/flink-autoscaler:$version"
     }
-    container {
-        environment= [SPRING_PROFILES_ACTIVE:'staging']
-    }
+//    container {
+//        environment= [SPRING_PROFILES_ACTIVE:'staging']
+//    }
 }
 
 dependencies {

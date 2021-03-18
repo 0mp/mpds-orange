@@ -57,7 +57,6 @@ public class DomainEventServiceImpl implements DomainEventService {
     private final static float TARGET_RECORDS_OVERESTIMATION_FACTOR = 1.3f;
     private final static float FLINK_RECORDS_IN_DISCOUNT_FACTOR = 0.65f;
 
-    // TODO Add Rescale time to table
     private final static float EXPECTED_SECONDS_TO_RESCALE = 3;
     private final static float LOWER_LAG_TIME_THRESHOLD = 3;
     private final static int MAX_POSSIBLE_PARALLELISM = 8;
@@ -232,7 +231,7 @@ public class DomainEventServiceImpl implements DomainEventService {
                                             }
                                             return this.flinkApiService.rescaleFlinkCluster(targetParallelism, metricReported, shortTermPrediction, longTermPrediction, aggregatePrediction);
                                         } else {
-                                            log.info("No Flink rescaling triggered since current and target parallelism are the same!");
+                                            log.info("Flink rescaling was NOT executed since current and target parallelism are the same!");
                                             return Mono.empty();
                                         }
                                     });
@@ -267,7 +266,6 @@ public class DomainEventServiceImpl implements DomainEventService {
                     return Mono.empty();
                 });
     }
-
 
     public double getTargetFlinkRecordsIn(MetricReported metricReported, float aggregatePrediction) {
         float kafkaLag = metricReported.getKafkaLag() + metricReported.getKafkaMessagesPerSecond() * EXPECTED_SECONDS_TO_RESCALE;
