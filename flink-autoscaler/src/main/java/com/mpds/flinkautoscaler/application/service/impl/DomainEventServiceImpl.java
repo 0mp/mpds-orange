@@ -69,7 +69,7 @@ public class DomainEventServiceImpl implements DomainEventService {
     private final static float MAX_CPU_UTILIZATION = 60;
     private final static float MAX_MEMORY_USAGE = 0.9f;
 
-    private final static float MIN_SECONDS_TO_PROCESS_LAG = 7;
+    private final static float MIN_SECONDS_TO_PROCESS_LAG = 8;
     private final static float MIN_CPU_UTILIZATION = 0.4f;
     private final static float MIN_MEMORY_USAGE = 0.5f;
 
@@ -81,7 +81,7 @@ public class DomainEventServiceImpl implements DomainEventService {
     private final static float FLINK_RECORDS_IN_DISCOUNT_FACTOR = 0.55f;
 
     // TODO Add Rescale time to table
-    private final static float EXPECTED_SECONDS_TO_RESCALE = 10;
+    private final static float EXPECTED_SECONDS_TO_RESCALE = 6;
     private final static float LOWER_LAG_TIME_THRESHOLD = 4;
     private final static int MAX_POSSIBLE_PARALLELISM = 8;
 
