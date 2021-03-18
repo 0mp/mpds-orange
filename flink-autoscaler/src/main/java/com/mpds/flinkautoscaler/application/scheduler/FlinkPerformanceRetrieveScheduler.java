@@ -138,8 +138,6 @@ public class FlinkPerformanceRetrieveScheduler {
                                     clusterPerformanceBenchmark.setCreatedAt(LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC));
                                     clusterPerformanceBenchmark.setRestartTime(foundClusterPerformanceBenchmarkFromDB.getRestartTime());
                                     if (clusterPerformanceBenchmark.getMaxRate() > foundClusterPerformanceBenchmarkFromDB.getMaxRate()) {
-//                                        clusterPerformanceBenchmark.setMaxRate(foundClusterPerformanceBenchmarkFromDB.getMaxRate());
-                                        log.debug("---- UPDATING PARALLELISM for  " + clusterPerformanceBenchmark.getParallelism() + " with maxRate: " + clusterPerformanceBenchmark.getMaxRate());
                                         return this.clusterPerformanceBenchmarkRepository.updateMaxRateForParallelism(clusterPerformanceBenchmark.getMaxRate(), clusterPerformanceBenchmark.getParallelism());
                                     }
 //                                    log.debug(clusterPerformanceBenchmark.toString());
@@ -154,7 +152,7 @@ public class FlinkPerformanceRetrieveScheduler {
                                         return this.clusterPerformanceBenchmarkRepository.updateMaxRateForParallelism(clusterPerformanceBenchmark.getMaxRate(), foundClusterPerformanceBenchmarkFromDB.getParallelism())
                                                 .flatMap(numUpdatedEntries -> {
                                                     if (numUpdatedEntries > 0) {
-                                                        log.info("Updated records (" + numUpdatedEntries + ") for parallelism: " + clusterPerformanceBenchmark.getParallelism());
+                                                        log.info("Updated record (" + numUpdatedEntries + ") for parallelism " + clusterPerformanceBenchmark.getParallelism() + "and max rate " + clusterPerformanceBenchmark.getMaxRate());
                                                     } else {
                                                         log.warn("No entries were updated in the performance table!");
                                                     }
