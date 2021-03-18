@@ -28,7 +28,7 @@ fi
 	-Dkubernetes.cluster-id=flink-cluster \
 	-Dkubernetes.container.image="$docker_image" \
 	-Dkubernetes.container.image.pull-policy=Always \
-	-Dkubernetes.jobmanager.cpu=2.0 \
+	-Dkubernetes.jobmanager.cpu=5.0 \
 	-Dexecution.attached=false \
 	-Dkubernetes.jobmanager.annotations=prometheus.io/scrape:'true',prometheus.io/port:'9999' \
 	-Dkubernetes.taskmanager.annotations=prometheus.io/scrape:'true',prometheus.io/port:'9999' \
