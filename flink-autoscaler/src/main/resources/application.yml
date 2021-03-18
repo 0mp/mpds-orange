@@ -43,8 +43,8 @@ metrics-server:
 autoscaler:
   flink:
     base-url: http://34.107.29.56:8081
-    job-id: adbe51b60c2590b4ef90539797b8538c
-    jar-id: 811833b9-dc12-4624-8482-8ead7f06ff11_processor-1.0-SNAPSHOT.jar
+    job-id: 34410f22781c3c8caa82773cf97583ad
+    jar-id: 9318a987-4829-467f-a8d9-fa23fe5929ed_processor-1.0-SNAPSHOT.jar
     program-args: --statebackend.default false --checkpoint hdfs://hadoop-hdfs-namenode:8020/flink/checkpoints --checkpoint.interval 300000
     savepoint-directory: hdfs://hadoop-hdfs-namenode:8020/flink/savepoints
     cooldown-duration: 200
