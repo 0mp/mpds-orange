@@ -56,8 +56,13 @@ public class MeasureFlinkRestartTimeTask implements Runnable {
                             }
                             return Mono.just(1);
                         })
-                        .switchIfEmpty(this.clusterPerformanceBenchmarkRepository.save(flinkClusterRestartTime))
+                        .switchIfEmpty(persistNewClusterPerformanceBenchmark(flinkClusterRestartTime))
                 )
                 .subscribe();
+    }
+
+    private Mono<ClusterPerformanceBenchmark> persistNewClusterPerformanceBenchmark(ClusterPerformanceBenchmark flinkClusterRestartTime) {
+        flinkClusterRestartTime.setNewEntry(true);
+        return this.clusterPerformanceBenchmarkRepository.save(flinkClusterRestartTime);
     }
 }

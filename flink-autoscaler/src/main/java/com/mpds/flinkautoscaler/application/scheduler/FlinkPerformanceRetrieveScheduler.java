@@ -95,8 +95,6 @@ public class FlinkPerformanceRetrieveScheduler {
                             }
                         }
                     }
-
-                    log.debug("__ RECIVED PROMETHEUS metric during benchmarking:  " + flinkMetric.toString());
                     float flinkNumRecordsInPerSecond = 0.0f;
                     if (flinkMetric.getData().getResult() != null && flinkMetric.getData().getResult().size() > 0) {
                         flinkNumRecordsInPerSecond = Float.parseFloat(flinkMetric.getData().getResult().get(0).getValue()[1].toString());
@@ -124,13 +122,11 @@ public class FlinkPerformanceRetrieveScheduler {
                     }
                     log.info("<<<<<<<---------->>>>>>> [ENDING] *** EVALUATION RESULTS *** [ENDING] <<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>");
 
-//                    return Mono.empty();
                     ClusterPerformanceBenchmark clusterPerformanceBenchmark = ClusterPerformanceBenchmark.builder()
                             .parallelism(currentParallelism)
                             .createdDate(currentDateTime)
                             .numTaskmanagerPods(currentParallelism)
                             .maxRate((int) (flinkNumRecordsInPerSecond))
-//                            .maxRate((int) (flinkNumRecordsOutPerSecond*currentParallelism*0.5))
                             .build();
 //                    if(metricTriggerPredictionsSnapshot != null) {}
 //                        clusterPerformanceBenchmark.setMaxRate(((int) metricTriggerPredictionsSnapshot.getMetricTrigger().getKafkaMessagesPerSecond()));
@@ -150,7 +146,7 @@ public class FlinkPerformanceRetrieveScheduler {
 //                                    return this.clusterPerformanceBenchmarkRepository.save(clusterPerformanceBenchmark);
                                     return Mono.just(clusterPerformanceBenchmark);
                                 })
-                                .switchIfEmpty(this.clusterPerformanceBenchmarkRepository.save(clusterPerformanceBenchmark));
+                                .switchIfEmpty(persistNewClusterPerformanceBenchmark(clusterPerformanceBenchmark));
                     } else if (metricTriggerPredictionsSnapshot != null && currentParallelism == metricTriggerPredictionsSnapshot.getTargetParallelism() && Duration.between(metricTriggerPredictionsSnapshot.getSnapshotTime(), LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC)).abs().toSeconds() > 30) {
                         return this.clusterPerformanceBenchmarkRepository.findFirstByParallelism(currentParallelism)
                                 .flatMap(foundClusterPerformanceBenchmarkFromDB -> {
@@ -165,11 +161,16 @@ public class FlinkPerformanceRetrieveScheduler {
                                                     return Mono.just(clusterPerformanceBenchmark);
                                                 });
                                     }
-                                    return Mono.empty();
+                                    return Mono.just(clusterPerformanceBenchmark);
                                 })
-                                .switchIfEmpty(this.clusterPerformanceBenchmarkRepository.save(clusterPerformanceBenchmark));
+                                .switchIfEmpty(persistNewClusterPerformanceBenchmark(clusterPerformanceBenchmark));
                     }
                     return Mono.empty();
                 }).subscribe();
+    }
+
+    public Mono<ClusterPerformanceBenchmark> persistNewClusterPerformanceBenchmark(ClusterPerformanceBenchmark clusterPerformanceBenchmark) {
+        clusterPerformanceBenchmark.setNewEntry(true);
+        return this.clusterPerformanceBenchmarkRepository.save(clusterPerformanceBenchmark);
     }
 }

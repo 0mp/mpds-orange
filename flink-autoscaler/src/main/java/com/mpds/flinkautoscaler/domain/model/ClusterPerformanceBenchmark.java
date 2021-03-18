@@ -1,10 +1,10 @@
 package com.mpds.flinkautoscaler.domain.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
+import lombok.*;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @Data
-public class ClusterPerformanceBenchmark {
+public class ClusterPerformanceBenchmark implements Persistable<Long> {
 
     @Id
     private Long id;
@@ -42,4 +42,13 @@ public class ClusterPerformanceBenchmark {
     @Column("created_at")
     private LocalDateTime createdAt;
 
+
+    @Transient
+    @Setter
+    private boolean isNewEntry;
+
+    @Override
+    public boolean isNew() {
+        return isNewEntry;
+    }
 }
