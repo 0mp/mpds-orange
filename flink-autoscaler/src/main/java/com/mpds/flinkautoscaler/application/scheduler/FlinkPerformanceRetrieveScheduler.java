@@ -54,7 +54,7 @@ public class FlinkPerformanceRetrieveScheduler {
         this.flinkApiService = flinkApiService;
     }
 
-//    @Scheduled(fixedDelay = 15000)
+    //    @Scheduled(fixedDelay = 15000)
     @Scheduled(fixedDelay = 2000)
     public void scheduleFlinkPerformanceRetrieval() {
         LocalDateTime currentDateTime = LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC);
@@ -66,8 +66,8 @@ public class FlinkPerformanceRetrieveScheduler {
 //        Mono<Integer> currentFlinkClusterParallelism = this.flinkApiService.getCurrentFlinkClusterParallelism();
         Mono<Integer> currentFlinkClusterParallelism = this.prometheusApiService.getPrometheusMetric(this.prometheusApiService.getFlinkNumOfTaskManagers(currentDateTimeString))
                 .map(prometheusMetric -> {
-                    log.debug("[FlinkPerformanceRetrieveScheduler] Prometheus number of task managers response at <"+ currentDateTimeString +"> : " + prometheusMetric.toString());
-                    if(prometheusMetric.getData().getResult() != null && prometheusMetric.getData().getResult().size() > 0) {
+                    log.debug("[FlinkPerformanceRetrieveScheduler] Prometheus number of task managers response at <" + currentDateTimeString + "> : " + prometheusMetric.toString());
+                    if (prometheusMetric.getData().getResult() != null && prometheusMetric.getData().getResult().size() > 0) {
                         return Integer.parseInt(prometheusMetric.getData().getResult().get(0).getValue()[1].toString());
                     }
                     log.error("No Flink task managers were active reported from Prometheus at: " + currentDateTimeString);
@@ -85,20 +85,20 @@ public class FlinkPerformanceRetrieveScheduler {
                     int currentParallelism = tuple.getT1();
                     PrometheusMetric flinkMetric = tuple.getT2();
 
-                    float kafkaLoad=0.0f;
-                    if(tuple.getT3().getData().getResult().size()>0) {
+                    float kafkaLoad = 0.0f;
+                    if (tuple.getT3().getData().getResult().size() > 0) {
 //                kafkaLoad = Float.parseFloat(tuple.getT3().getData().getResult().get(0).getValue()[1].toString());
 
-                        for(Result result : tuple.getT3().getData().getResult()) {
-                            if(this.prometheusProps.getSourceTopic().equalsIgnoreCase(result.getMetric().getTopic())) {
+                        for (Result result : tuple.getT3().getData().getResult()) {
+                            if (this.prometheusProps.getSourceTopic().equalsIgnoreCase(result.getMetric().getTopic())) {
                                 kafkaLoad = Float.parseFloat(result.getValue()[1].toString());
                             }
                         }
                     }
 
                     log.debug("__ RECIVED PROMETHEUS metric during benchmarking:  " + flinkMetric.toString());
-                    float flinkNumRecordsInPerSecond= 0.0f;
-                    if(flinkMetric.getData().getResult() != null && flinkMetric.getData().getResult().size() > 0) {
+                    float flinkNumRecordsInPerSecond = 0.0f;
+                    if (flinkMetric.getData().getResult() != null && flinkMetric.getData().getResult().size() > 0) {
                         flinkNumRecordsInPerSecond = Float.parseFloat(flinkMetric.getData().getResult().get(0).getValue()[1].toString());
                         // Calculating average throughput of the current Flink cluster
 //                        flinkNumRecordsInPerSecond = (float) flinkMetric.getData().getResult().stream().mapToDouble(value -> Double.parseDouble((String) value.getValue()[1])).average().orElse(0);
@@ -108,18 +108,19 @@ public class FlinkPerformanceRetrieveScheduler {
                     log.info("<<<<<<<---------->>>>>>> [START] *** EVALUATION RESULTS *** [START]  <<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>");
                     log.info("Evaluation at: " + currentDateTimeString);
                     log.info("Flink parallelism of the cluster: " + currentParallelism);
-                    log.info("Flink Metric from Prometheus: " + flinkMetric.toString());
                     log.info("Kafka Load: " + kafkaLoad);
                     log.info("Flink flinkNumRecordsInPerSecond: " + flinkNumRecordsInPerSecond);
                     if (metricTriggerPredictionsSnapshot != null) {
                         log.info("Flink Job ID: " + metricTriggerPredictionsSnapshot.getJobId());
                         log.info("Snapshot from: " + metricTriggerPredictionsSnapshot.getSnapshotTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")));
                         log.info("Based on Trigger: " + metricTriggerPredictionsSnapshot.getMetricTrigger().toString());
-                        log.info("Aggregate Prediction: " + metricTriggerPredictionsSnapshot.getAggregatePrediction());
-                        if(metricTriggerPredictionsSnapshot.getShorttermPrediction()!=null) log.info("Based on ST Prediction: " + metricTriggerPredictionsSnapshot.getShorttermPrediction().toString());
-                        if(metricTriggerPredictionsSnapshot.getLongtermPredictionReported()!=null) log.info("Based on LT Prediction: " + metricTriggerPredictionsSnapshot.getLongtermPredictionReported().getClosestPrediction(currentDateTime));
+                        log.info("Based on Aggregate Prediction: " + metricTriggerPredictionsSnapshot.getAggregatePrediction());
+                        if (metricTriggerPredictionsSnapshot.getShorttermPrediction() != null)
+                            log.info("Based on ST Prediction: " + metricTriggerPredictionsSnapshot.getShorttermPrediction().toString());
+                        if (metricTriggerPredictionsSnapshot.getLongtermPredictionReported() != null)
+                            log.info("Based on LT Prediction: " + metricTriggerPredictionsSnapshot.getLongtermPredictionReported().getClosestPrediction(currentDateTime));
                         if (currentParallelism != metricTriggerPredictionsSnapshot.getTargetParallelism())
-                            log.error("Current parallelism is " + currentParallelism + ", but target parallelism was " + metricTriggerPredictionsSnapshot.getTargetParallelism());
+                            log.warn("Current parallelism is " + currentParallelism + ", but target parallelism was " + metricTriggerPredictionsSnapshot.getTargetParallelism());
                     }
                     log.info("<<<<<<<---------->>>>>>> [ENDING] *** EVALUATION RESULTS *** [ENDING] <<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>---<<<<<<<---------->>>>>>>");
 
@@ -134,24 +135,39 @@ public class FlinkPerformanceRetrieveScheduler {
 //                    if(metricTriggerPredictionsSnapshot != null) {}
 //                        clusterPerformanceBenchmark.setMaxRate(((int) metricTriggerPredictionsSnapshot.getMetricTrigger().getKafkaMessagesPerSecond()));
 //                        clusterPerformanceBenchmark.setMaxRate((int) flinkNumRecordsOutPerSecond);
-                    if( (alwaysInsertClusterPerformanceToDB) ) {
+                    if ((alwaysInsertClusterPerformanceToDB)) {
                         return this.clusterPerformanceBenchmarkRepository.findFirstByParallelism(currentParallelism)
-                                .flatMap(clusterPerformanceBenchmark1 -> {
-                                    clusterPerformanceBenchmark.setId(clusterPerformanceBenchmark1.getId());
+                                .flatMap(foundClusterPerformanceBenchmarkFromDB -> {
+                                    clusterPerformanceBenchmark.setId(foundClusterPerformanceBenchmarkFromDB.getId());
                                     clusterPerformanceBenchmark.setCreatedAt(LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC));
-                                    clusterPerformanceBenchmark.setRestartTime(clusterPerformanceBenchmark1.getRestartTime());
-                                    if(clusterPerformanceBenchmark.getMaxRate()<clusterPerformanceBenchmark1.getMaxRate()) {
-                                        clusterPerformanceBenchmark.setMaxRate(clusterPerformanceBenchmark1.getMaxRate());
+                                    clusterPerformanceBenchmark.setRestartTime(foundClusterPerformanceBenchmarkFromDB.getRestartTime());
+                                    if (clusterPerformanceBenchmark.getMaxRate() > foundClusterPerformanceBenchmarkFromDB.getMaxRate()) {
+//                                        clusterPerformanceBenchmark.setMaxRate(foundClusterPerformanceBenchmarkFromDB.getMaxRate());
                                         log.debug("---- UPDATING PARALLELISM for  " + clusterPerformanceBenchmark.getParallelism() + " with maxRate: " + clusterPerformanceBenchmark.getMaxRate());
-                                        this.clusterPerformanceBenchmarkRepository.updateMaxRateForParallelism(clusterPerformanceBenchmark.getMaxRate(), clusterPerformanceBenchmark.getParallelism());
+                                        return this.clusterPerformanceBenchmarkRepository.updateMaxRateForParallelism(clusterPerformanceBenchmark.getMaxRate(), clusterPerformanceBenchmark.getParallelism());
                                     }
 //                                    log.debug(clusterPerformanceBenchmark.toString());
 //                                    return this.clusterPerformanceBenchmarkRepository.save(clusterPerformanceBenchmark);
                                     return Mono.just(clusterPerformanceBenchmark);
                                 })
                                 .switchIfEmpty(this.clusterPerformanceBenchmarkRepository.save(clusterPerformanceBenchmark));
-                    } else if(metricTriggerPredictionsSnapshot!=null && currentParallelism == metricTriggerPredictionsSnapshot.getTargetParallelism() && Duration.between(metricTriggerPredictionsSnapshot.getSnapshotTime(), LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC)).abs().toSeconds()>30) {
-                        return this.clusterPerformanceBenchmarkRepository.updateMaxRateForParallelism(clusterPerformanceBenchmark.getMaxRate(), clusterPerformanceBenchmark.getParallelism());
+                    } else if (metricTriggerPredictionsSnapshot != null && currentParallelism == metricTriggerPredictionsSnapshot.getTargetParallelism() && Duration.between(metricTriggerPredictionsSnapshot.getSnapshotTime(), LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC)).abs().toSeconds() > 30) {
+                        return this.clusterPerformanceBenchmarkRepository.findFirstByParallelism(currentParallelism)
+                                .flatMap(foundClusterPerformanceBenchmarkFromDB -> {
+                                    if (clusterPerformanceBenchmark.getMaxRate() > foundClusterPerformanceBenchmarkFromDB.getMaxRate()) {
+                                        return this.clusterPerformanceBenchmarkRepository.updateMaxRateForParallelism(clusterPerformanceBenchmark.getMaxRate(), foundClusterPerformanceBenchmarkFromDB.getParallelism())
+                                                .flatMap(numUpdatedEntries -> {
+                                                    if (numUpdatedEntries > 0) {
+                                                        log.info("Updated records (" + numUpdatedEntries + ") for parallelism: " + clusterPerformanceBenchmark.getParallelism());
+                                                    } else {
+                                                        log.warn("No entries were updated in the performance table!");
+                                                    }
+                                                    return Mono.just(clusterPerformanceBenchmark);
+                                                });
+                                    }
+                                    return Mono.empty();
+                                })
+                                .switchIfEmpty(this.clusterPerformanceBenchmarkRepository.save(clusterPerformanceBenchmark));
                     }
                     return Mono.empty();
                 }).subscribe();
