@@ -586,7 +586,7 @@ public class DomainEventServiceImpl implements DomainEventService {
                     }
                     return Mono.just(flinkSavepointInfoResponse);
                 }))
-                .repeatWhenEmpty(20, longFlux -> longFlux.delayElements(Duration.ofSeconds(1)).doOnNext(it -> log.info("Repeating {}", it)));
+                .repeatWhenEmpty(240, longFlux -> longFlux.delayElements(Duration.ofSeconds(1)).doOnNext(it -> log.info("Repeating {}", it)));
 //                })).repeatWhenEmpty(10, longFlux -> getFlinkSavepointInfo(this.flinkProps.getJobId(), flinkSavepointResponse.getRequestId()))
 //                .then();
     }

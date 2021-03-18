@@ -30,4 +30,5 @@ public interface ClusterPerformanceBenchmarkRepository extends ReactiveCrudRepos
     @Modifying
     @Query("UPDATE cluster_performance_benchmark SET max_rate = :maxRate where parallelism = :parallelism AND max_rate < :maxRate")
     Mono<Integer> updateMaxRateForParallelism(int maxRate, int parallelism);
+
 }
