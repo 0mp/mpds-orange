@@ -143,9 +143,11 @@ public class FlinkPerformanceRetrieveScheduler {
                                     if(clusterPerformanceBenchmark.getMaxRate()<clusterPerformanceBenchmark1.getMaxRate()) {
                                         clusterPerformanceBenchmark.setMaxRate(clusterPerformanceBenchmark1.getMaxRate());
                                         log.debug("---- UPDATING PARALLELISM for  " + clusterPerformanceBenchmark.getParallelism() + " with maxRate: " + clusterPerformanceBenchmark.getMaxRate());
+                                        this.clusterPerformanceBenchmarkRepository.updateMaxRateForParallelism(clusterPerformanceBenchmark.getMaxRate(), clusterPerformanceBenchmark.getParallelism());
                                     }
-                                    log.debug(clusterPerformanceBenchmark.toString());
-                                    return this.clusterPerformanceBenchmarkRepository.save(clusterPerformanceBenchmark);
+//                                    log.debug(clusterPerformanceBenchmark.toString());
+//                                    return this.clusterPerformanceBenchmarkRepository.save(clusterPerformanceBenchmark);
+                                    return Mono.just(clusterPerformanceBenchmark);
                                 })
                                 .switchIfEmpty(this.clusterPerformanceBenchmarkRepository.save(clusterPerformanceBenchmark));
                     } else if(metricTriggerPredictionsSnapshot!=null && currentParallelism == metricTriggerPredictionsSnapshot.getTargetParallelism() && Duration.between(metricTriggerPredictionsSnapshot.getSnapshotTime(), LocalDateTime.ofInstant(Instant.now(), ZoneOffset.UTC)).abs().toSeconds()>30) {
