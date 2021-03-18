@@ -65,11 +65,11 @@ public class DomainEventServiceImpl implements DomainEventService {
     private final static float UPPERTHRESHOLD = 3;
     private final static float LOWERTHRESHOLD = 0.4f;
 
-    private final static float MAX_SECONDS_TO_PROCESS_LAG = 25;
+    private final static float MAX_SECONDS_TO_PROCESS_LAG = 24;
     private final static float MAX_CPU_UTILIZATION = 60;
     private final static float MAX_MEMORY_USAGE = 0.9f;
 
-    private final static float MIN_SECONDS_TO_PROCESS_LAG = 10;
+    private final static float MIN_SECONDS_TO_PROCESS_LAG = 8;
     private final static float MIN_CPU_UTILIZATION = 0.4f;
     private final static float MIN_MEMORY_USAGE = 0.5f;
 
@@ -77,8 +77,8 @@ public class DomainEventServiceImpl implements DomainEventService {
     private final static float LT_ERROR_FRACTION_THRESHOLD = 0.8f;
     private final static int STEPS_NO_ERROR_VIOLATION = 3;
 
-    private final static float TARGET_RECORDS_OVERESTIMATION_FACTOR = 1.3f;
-    private final static float FLINK_RECORDS_IN_DISCOUNT_FACTOR = 0.65f;
+    private final static float TARGET_RECORDS_OVERESTIMATION_FACTOR = 1.45f;
+    private final static float FLINK_RECORDS_IN_DISCOUNT_FACTOR = 0.55f;
 
     // TODO Add Rescale time to table
     private final static float EXPECTED_SECONDS_TO_RESCALE = 3;
