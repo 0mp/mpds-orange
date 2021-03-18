@@ -23,7 +23,7 @@ public class MeasureFlinkRestartTimeTask implements Runnable {
     private final LocalDateTime flinkJobCanceledAt;
     private final int targetParallelism;
 
-    long flinkRestartTimeInMillis;
+    private long flinkRestartTimeInMillis;
 
     @Override
     public void run() {

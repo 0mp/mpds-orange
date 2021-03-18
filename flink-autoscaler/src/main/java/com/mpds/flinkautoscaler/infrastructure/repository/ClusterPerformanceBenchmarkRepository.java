@@ -10,11 +10,8 @@ import reactor.core.publisher.Mono;
 @Repository
 public interface ClusterPerformanceBenchmarkRepository extends ReactiveCrudRepository<ClusterPerformanceBenchmark, Long> {
 
-//    Mono<ClusterPerformanceBenchmark> findByParallelism(int parallelism);
-
     Mono<ClusterPerformanceBenchmark> findFirstByParallelism(int parallelism);
 
-//    SELECT TOP (1) FROM cluster_performance_benchmark WHERE max_rate < 21000 ORDER BY max_rate DESC
     @Query("SELECT parallelism FROM cluster_performance_benchmark WHERE max_rate > :aggregatePrediction ORDER BY max_rate ASC LIMIT 1")
     Mono<Integer> findOptimalParallelism(float aggregatePrediction);
 
@@ -23,9 +20,6 @@ public interface ClusterPerformanceBenchmarkRepository extends ReactiveCrudRepos
 
     @Query("SELECT * FROM cluster_performance_benchmark WHERE max_rate < :aggregatePrediction ORDER BY max_rate DESC LIMIT 1")
     Mono<ClusterPerformanceBenchmark> findInfimumParallelismWithMaxRate(float aggregatePrediction);
-
-    @Query("SELECT max_rate FROM cluster_performance_benchmark WHERE parallelism = :aggregatePrediction")
-    Mono<Integer> getMaxRateOfParallelism(int parallelism);
 
     @Modifying
     @Query("UPDATE cluster_performance_benchmark SET max_rate = :maxRate where parallelism = :parallelism AND max_rate < :maxRate")
