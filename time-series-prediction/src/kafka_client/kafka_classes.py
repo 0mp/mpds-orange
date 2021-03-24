@@ -6,7 +6,6 @@ import datetime
 from dateutil.parser import isoparse
 import uuid
 from threading import Thread, Lock
-import torch
 import numpy as np
 import os
 import csv

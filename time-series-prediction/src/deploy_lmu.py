@@ -1,5 +1,4 @@
 from models.lmu import get_lmu_model
-from train_loops import pre_train_lambda
 from kafka_client.kafka_classes import KafkaConsumerThread, KafkaPredictionProducer
 from kafka_client.kafka_util import sim_traffic
 from train_tf_keras import pre_train_lambda
